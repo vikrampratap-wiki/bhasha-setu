@@ -1,0 +1,34 @@
+{
+  "name": "bhasha-setu",
+  "version": "1.0.0",
+  "description": "Universal Offline Multi-Speaker Voice-to-Hindi Translator with E2EE Real-time Sync for Mobile, Tablet & Desktop",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'Static build ready'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vikrampratap-wiki/bhasha-setu.git"
+  },
+  "keywords": [
+    "hindi",
+    "translation",
+    "voice-to-text",
+    "offline",
+    "speech-recognition",
+    "diarization",
+    "e2ee",
+    "pwa"
+  ],
+  "author": "Vikram Pratap",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vikrampratap-wiki/bhasha-setu/issues"
+  },
+  "homepage": "https://github.com/vikrampratap-wiki/bhasha-setu#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
