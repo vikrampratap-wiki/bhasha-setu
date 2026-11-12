@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bg192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="accent192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+
+  <rect width="192" height="192" rx="42" fill="url(#bg192)" stroke="#334155" stroke-width="4" />
+  <circle cx="96" cy="78" r="40" fill="#1e293b" stroke="url(#accent192)" stroke-width="4" />
+  <g fill="url(#accent192)">
+    <rect x="88" y="55" width="16" height="30" rx="8" />
+    <path d="M80 73 c0 11 7 18 16 18 s16 -7 16 -18" fill="none" stroke="url(#accent192)" stroke-width="3" stroke-linecap="round" />
+    <line x1="96" y1="91" x2="96" y2="101" stroke="url(#accent192)" stroke-width="3" stroke-linecap="round" />
+    <line x1="85" y1="101" x2="107" y2="101" stroke="url(#accent192)" stroke-width="3" stroke-linecap="round" />
+  </g>
+  <path d="M30 135 Q65 110 96 135 T162 135" fill="none" stroke="#10b981" stroke-width="5" stroke-linecap="round" />
+  <path d="M40 152 Q68 132 96 152 T152 152" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+  <text x="96" y="178" font-family="'Hind', sans-serif" font-size="14" font-weight="bold" fill="#f8fafc" text-anchor="middle">भाषा सेतु</text>
+</svg>

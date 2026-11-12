@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="wave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)" stroke="#334155" stroke-width="8" />
+
+  <!-- Hindi Character 'आ' / Voice Wave Centerpiece -->
+  <circle cx="256" cy="210" r="105" fill="#1e293b" stroke="url(#accent)" stroke-width="10" />
+
+  <!-- Microphone Icon in Center -->
+  <g fill="url(#accent)">
+    <rect x="236" y="150" width="40" height="75" rx="20" />
+    <path d="M216 195 c0 26 18 45 40 45 s40 -19 40 -45" fill="none" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" />
+    <line x1="256" y1="240" x2="256" y2="265" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" />
+    <line x1="230" y1="265" x2="282" y2="265" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" />
+  </g>
+
+  <!-- Multi-Speaker Audio Waveform Waves -->
+  <path d="M90 350 Q170 290 256 350 T422 350" fill="none" stroke="url(#wave)" stroke-width="12" stroke-linecap="round" />
+  <path d="M110 390 Q180 340 256 390 T402 390" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" opacity="0.8" />
+  <path d="M140 425 Q200 395 256 425 T372 425" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" opacity="0.6" />
+
+  <!-- Hindi 'अ' Devanagari Subtle Watermark -->
+  <text x="256" y="480" font-family="'Hind', sans-serif" font-size="34" font-weight="bold" fill="#f8fafc" text-anchor="middle" letter-spacing="3">भाषा सेतु</text>
+</svg>

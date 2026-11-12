@@ -1,0 +1,117 @@
+/* BhashaSetu - Universal Responsive Styling */
+@import url('https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary-glow: rgba(245, 158, 11, 0.15);
+  --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Hind', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #090d16;
+  background-image: var(--bg-gradient);
+  min-height: 100vh;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glassmorphism Card Panels */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-header {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Active Tab Indicator */
+.tab-btn.active-tab {
+  background: rgba(245, 158, 11, 0.12);
+  border-bottom: 2px solid #f59e0b;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+/* Pulsing Mic Visualizer Ring */
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(225, 29, 72, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+  }
+}
+
+.mic-recording-pulse {
+  animation: pulseGlow 1.6s infinite;
+}
+
+/* Responsive Touch Target Sizing */
+button, input, select, textarea {
+  touch-action: manipulation;
+}
+
+@media (max-width: 640px) {
+  .chat-scroll-area {
+    height: calc(100vh - 350px);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .chat-scroll-area {
+    height: calc(100vh - 380px);
+  }
+}
+
+@media (min-width: 1025px) {
+  .chat-scroll-area {
+    height: calc(100vh - 390px);
+  }
+}

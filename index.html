@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>भाषा सेतु (BhashaSetu) - बहु-वक्ता वॉयस व हिन्दी अनुवादक</title>
+  <meta name="description" content="टैबलेट, मोबाइल और डेस्कटॉप के लिए ऑफ़लाइन-सक्षम, बहु-वक्ता वॉयस अनुवादक व रीयल-टाइम एंड-टू-एंड एन्क्रिप्टेड सिंक">
+  <meta name="theme-color" content="#0f172a">
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col min-h-screen selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- Top App Bar (Header) -->
+  <header class="glass-header sticky top-0 z-50 px-4 py-3 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-bold text-xl">
+          सेतु
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+              भाषा सेतु <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-normal">v1.0</span>
+            </h1>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">सार्वभौमिक वॉयस-टू-हिन्दी अनुवादक एवं बहु-वक्ता डायराइज़र</p>
+        </div>
+      </div>
+
+      <!-- Live Status Indicators -->
+      <div class="flex items-center gap-2">
+        <!-- E2EE Indicator -->
+        <div class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800/80 border border-slate-700/60 text-slate-300" title="डेटा AES-256-GCM द्वारा सुरक्षित है">
+          <span class="text-amber-400">🔒</span>
+          <span class="hidden md:inline">E2EE 256-बिट</span>
+        </div>
+
+        <!-- Network Online/Offline Badge -->
+        <div id="network-badge" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/70 border border-emerald-500/30 text-emerald-300">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>ऑनलाइन</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto mt-2.5 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-800/80 pt-2">
+      <button data-tab="conversation" class="tab-btn active-tab flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all">
+        🎙️ <span>मुख्य वार्तालाप</span>
+      </button>
+      <button data-tab="text" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all">
+        📝 <span>टेक्स्ट अनुवाद</span>
+      </button>
+      <button data-tab="speakers" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all">
+        👥 <span>वक्ता एवं स्पष्टता EQ</span>
+      </button>
+      <button data-tab="sync" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all">
+        🔄 <span>रीयल-टाइम सिंक</span>
+      </button>
+      <button data-tab="history" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all">
+        📚 <span>ऑफ़लाइन शब्दकोश</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 flex flex-col">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: मुख्य वार्तालाप एवं वॉयस अनुवाद      -->
+    <!-- ========================================== -->
+    <div id="tab-conversation" class="tab-content flex-1 flex flex-col gap-4">
+      
+      <!-- Top Control & Multi-Speaker Bar -->
+      <div class="glass-panel p-3.5 md:p-4 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        
+        <!-- Active Speaker Selection Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto py-1">
+          <span class="text-xs text-slate-400 font-semibold shrink-0">सक्रिय वक्ता:</span>
+          <div id="speaker-pills" class="flex items-center gap-1.5 shrink-0">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Real-time Pitch & Audio Settings Controls -->
+        <div class="flex items-center flex-wrap gap-3 border-t md:border-t-0 border-slate-800 pt-2 md:pt-0">
+          
+          <!-- Live Pitch Meter -->
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
+            <span class="text-slate-400">पिच ($F_0$):</span>
+            <span id="pitch-display" class="font-mono font-bold text-slate-200">शांत (तैयार)</span>
+          </div>
+
+          <!-- Vocal Clarity Toggle -->
+          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="clarity-toggle" checked class="rounded border-slate-700 text-amber-500 focus:ring-0">
+            <span>🔊 वोकल स्पष्टता EQ</span>
+          </label>
+
+          <!-- Force Offline Toggle -->
+          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="offline-toggle" class="rounded border-slate-700 text-amber-500 focus:ring-0">
+            <span>बिना इंटरनेट मोड</span>
+          </label>
+
+          <!-- Action buttons -->
+          <div class="flex items-center gap-1.5 ml-auto">
+            <button id="clear-chat-btn" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800/80 transition-colors" title="इतिहास साफ़ करें">
+              🗑️
+            </button>
+            <button id="export-chat-btn" class="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800/80 transition-colors" title="सत्र एक्सपोर्ट करें">
+              💾
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Live Audio Waveform Canvas Banner -->
+      <div class="glass-panel p-2.5 rounded-2xl relative overflow-hidden flex flex-col justify-center">
+        <canvas id="visualizer-canvas" width="800" height="48" class="w-full h-12 rounded-xl block"></canvas>
+        <div id="mic-status-indicator" class="hidden absolute top-2 right-4 text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+          🎙️ सुन रहा है...
+        </div>
+        <div id="active-tts-indicator" class="hidden absolute bottom-2 left-4 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+          🔊 बोल रहा है...
+        </div>
+      </div>
+
+      <!-- Conversation Timeline Scroll Area -->
+      <div class="glass-panel flex-1 rounded-2xl p-4 overflow-y-auto chat-scroll-area flex flex-col gap-3">
+        <div id="conversation-list" class="flex flex-col gap-3">
+          <!-- Stored Messages will populate here -->
+        </div>
+
+        <!-- Interim Speaking Bubble (Real-time feedback) -->
+        <div id="interim-box" class="hidden p-3 rounded-xl bg-slate-800/50 border border-dashed border-amber-500/40 text-sm text-slate-300">
+          <!-- Real time text -->
+        </div>
+      </div>
+
+      <!-- Bottom Voice Action Bar -->
+      <div class="glass-panel p-3 md:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl">
+        
+        <!-- Source Language Selector -->
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <label for="source-lang-select" class="text-xs text-slate-400 whitespace-nowrap">बोलने की भाषा:</label>
+          <select id="source-lang-select" class="w-full sm:w-auto px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs md:text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <option value="auto">🌐 ऑटो पहचान (Auto Detect)</option>
+            <option value="en" selected>English (अंग्रेजी)</option>
+            <option value="es">Español (स्पैनिश)</option>
+            <option value="fr">Français (फ्रेंच)</option>
+            <option value="de">Deutsch (जर्मन)</option>
+            <option value="ru">Русский (रूसी)</option>
+            <option value="zh">中文 (चीनी)</option>
+            <option value="ja">日本語 (जापानी)</option>
+            <option value="ar">العربية (अरबी)</option>
+            <option value="bn">বাংলা (बंगाली)</option>
+            <option value="ta">தமிழ் (तमिल)</option>
+            <option value="te">తెలుగు (तेलुगु)</option>
+            <option value="mr">मराठी (मराठी)</option>
+            <option value="gu">ગુજરાતી (गुजराती)</option>
+            <option value="pa">ਪੰਜਾਬੀ (पंजाबी)</option>
+            <option value="ur">اردو (उर्दू)</option>
+          </select>
+        </div>
+
+        <!-- Main Prominent Microphone Button -->
+        <button id="mic-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold text-sm md:text-base flex items-center justify-center gap-3 shadow-lg shadow-amber-500/20 transition-all">
+          <span class="text-xl">🎙️</span>
+          <span id="mic-btn-text">बोलना शुरू करें</span>
+        </button>
+
+        <!-- Target Language Badge -->
+        <div class="text-xs text-slate-400 flex items-center gap-2">
+          <span>अनुवाद लक्ष्य:</span>
+          <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/30">
+            🇮🇳 हिन्दी (Hindi)
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: त्वरित टेक्स्ट अनुवाद (Text Translate) -->
+    <!-- ========================================== -->
+    <div id="tab-text" class="tab-content hidden flex-1 flex flex-col gap-4">
+      <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            📝 किसी भी भाषा का त्वरित हिन्दी अनुवाद
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            यहाँ कोई भी वाक्य लिखें या पेस्ट करें। यह बिना इंटरनेट के भी स्थानीय डिक्शनरी से अनुवाद करता है।
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+          <!-- Input Area -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-slate-300">मूल टेक्स्ट (कोई भी भाषा):</label>
+            <textarea id="quick-text-input" rows="8" placeholder="यहाँ टेक्स्ट लिखें (उदा. How are you? / Bonjour / Hola)..." class="w-full flex-1 p-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 resize-none font-sans text-sm"></textarea>
+            <button id="quick-translate-btn" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-md">
+              हिन्दी में अनुवाद करें ➔
+            </button>
+          </div>
+
+          <!-- Output Area -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-amber-400">हिन्दी अनुवाद परिणाम:</label>
+            <div id="quick-translate-output" class="w-full flex-1 p-4 bg-slate-900/90 border border-amber-500/30 rounded-xl text-amber-200 text-base leading-relaxed overflow-y-auto">
+              यहाँ हिन्दी अनुवाद दिखेगा...
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="quick-speak-btn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all">
+                🔊 हिन्दी में सुनें
+              </button>
+              <button id="quick-copy-btn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all">
+                📋 कॉपी करें
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================== -->
+    <!-- TAB 3: वक्ता प्रोफाइल एवं ध्वनि स्पष्टता (Diarization) -->
+    <!-- =================================================== -->
+    <div id="tab-speakers" class="tab-content hidden flex-1 flex flex-col gap-4">
+      <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
+        
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              👥 बहु-वक्ता प्रोफाइल एवं ध्वनि स्पष्टता (Clarity Equalizer)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              जब कई लोग बात कर रहे हों, तो उनकी आवाज़ अलग-अलग लगे और अनुवाद बिल्कुल स्पष्ट सुनाई दे।
+            </p>
+          </div>
+          <button id="add-speaker-btn" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all">
+            + नया वक्ता जोड़ें
+          </button>
+        </div>
+
+        <!-- Clarity Feature Highlight Box -->
+        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-xs space-y-2 text-slate-300">
+          <div class="font-bold text-amber-400 text-sm flex items-center gap-2">
+            ✨ आवाज़ को अलग और स्पष्ट कैसे बनाया जाता है?
+          </div>
+          <p>
+            1. <strong>वोकल क्लैरिटी बैंडपास फ़िल्टर:</strong> 300Hz से कम की अवांछित घड़घड़ाहट और 3.4kHz से ऊपर की सीटी जैसी फुसफुसाहट को रोककर मानव आवाज़ को क्रिस्टल क्लियर बनाता है।
+          </p>
+          <p>
+            2. <strong>पिच ($F_0$) ऑटो-डायराइज़ेशन:</strong> ऑटो-कोरिलेशन गणितीय एल्गोरिदम द्वारा प्रत्येक व्यक्ति की स्वर-तार की पिच मापी जाती है।
+          </p>
+          <p>
+            3. <strong>विशिष्ट स्वर प्लेबैक:</strong> अनुवाद सुनाते समय प्रत्येक वक्ता के लिए भिन्न पिच (गंभीर 0.85x, मध्यम 1.05x, उच्च 1.25x) का उपयोग किया जाता है ताकि आँखें बंद करके भी समझ आए कि कौन सा वक्ता बोल रहा है।
+          </p>
+        </div>
+
+        <!-- Speaker Profiles List -->
+        <div id="speaker-profiles-list" class="flex flex-col gap-3">
+          <!-- Dynamically populated -->
+        </div>
+
+      </div>
+    </div>
+
+    <!-- =================================================== -->
+    <!-- TAB 4: रीयल-टाइम डेटा सिंक्रोनाइज़ेशन व E2EE         -->
+    <!-- =================================================== -->
+    <div id="tab-sync" class="tab-content hidden flex-1 flex flex-col gap-4">
+      <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            🔄 रीयल-टाइम सुरक्षित सिंक्रोनाइज़ेशन (E2EE)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            मोबाइल, टैबलेट और डेस्कटॉप के बीच बिना किसी केंद्रीय सर्वर पर डेटा स्टोर किए रीयल-टाइम सिंक।
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Room Configuration -->
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col gap-4">
+            <h3 class="text-sm font-bold text-slate-200">कमरे (Room) की सेटिंग्स</h3>
+            
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">कमरा कोड (Room Code):</label>
+              <input type="text" id="room-id-input" value="SETU-782" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 font-mono text-sm uppercase">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">सुरक्षा एन्क्रिप्शन पासफ्रेज (E2EE Key):</label>
+              <input type="password" id="room-key-input" value="bhasha-setu-secure-room-key" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 font-mono text-sm">
+              <span class="text-[11px] text-slate-500 mt-1 block">यह की (Key) केवल आपके और आपके साथियों के पास होनी चाहिए।</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="join-room-btn" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all">
+                रूम में जुड़ें / सिंक चालू करें
+              </button>
+              <button id="share-room-btn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-xs border border-slate-700 transition-all" title="पेयरिंग लिंक कॉपी करें">
+                🔗 शेयर करें
+              </button>
+            </div>
+          </div>
+
+          <!-- Security Verification Card -->
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col gap-4">
+            <h3 class="text-sm font-bold text-slate-200">सुरक्षा व प्रमाणीकरण</h3>
+            
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+              <span class="text-[11px] text-slate-400 block mb-1">सुरक्षा फिंगरप्रिंट (SHA-256):</span>
+              <div id="room-fingerprint" class="font-mono text-xs text-amber-400 font-bold">
+                गणना की जा रही है...
+              </div>
+              <p class="text-[10px] text-slate-500 mt-1">
+                यदि दोनों डिवाइसों पर यह फिंगरप्रिंट समान है, तो आपका कनेक्शन 100% सुरक्षित और गुप्त है।
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-xs">
+              <span class="text-slate-300">कनेक्टेड डिवाइस स्थिति:</span>
+              <span id="peer-count-badge" class="font-bold text-emerald-400">1 जुड़ा हुआ डिवाइस</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- =================================================== -->
+    <!-- TAB 5: ऑफ़लाइन शब्दकोश व सेटिंग्स (Offline & History) -->
+    <!-- =================================================== -->
+    <div id="tab-history" class="tab-content hidden flex-1 flex flex-col gap-4">
+      <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            📚 ऑफ़लाइन शब्दकोश व कस्टम शब्दावली
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            बिना इंटरनेट के भी जिन शब्दों का अनुवाद आप चाहते हैं, उन्हें यहाँ जोड़ें। यह तुरंत IndexedDB में सहेजा जाएगा।
+          </p>
+        </div>
+
+        <!-- Add Custom Word Form -->
+        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">अंग्रेजी / मूल शब्द:</label>
+            <input type="text" id="custom-word-input" placeholder="उदा. meeting" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">हिन्दी अर्थ:</label>
+            <input type="text" id="custom-meaning-input" placeholder="उदा. बैठक / सभा" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <div class="flex items-end">
+            <button id="add-word-btn" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md">
+              + शब्दकोश में सहेजें
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Vocabulary Display -->
+        <div class="flex flex-col gap-2">
+          <h3 class="text-xs font-semibold text-slate-300">आपके द्वारा सहेजे गए कस्टम शब्द:</h3>
+          <div id="custom-words-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="glass-header text-center py-2.5 px-4 text-slate-500 text-xs border-t border-slate-800">
+    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
+      <span>भाषा सेतु (BhashaSetu) • टैबलेट, मोबाइल व डेस्कटॉप के लिए ऑफ़लाइन सक्षम</span>
+      <span>🔒 एंड-टू-एंड 256-बिट एन्क्रिप्टेड</span>
+    </div>
+  </footer>
+
+  <!-- Application Scripts in correct sequence -->
+  <script src="js/crypto.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/audio-clarity.js"></script>
+  <script src="js/tts.js"></script>
+  <script src="js/translator.js"></script>
+  <script src="js/stt.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

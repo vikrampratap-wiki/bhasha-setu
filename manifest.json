@@ -1,0 +1,23 @@
+{
+  "name": "भाषा सेतु (BhashaSetu) - वॉयस एवं हिन्दी अनुवादक",
+  "short_name": "भाषा सेतु",
+  "description": "टैबलेट, मोबाइल और डेस्कटॉप के लिए ऑफ़लाइन-सक्षम, बहु-वक्ता वॉयस अनुवादक व रीयल-टाइम एंड-टू-एंड एन्क्रिप्टेड सिंक",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["utilities", "productivity", "education"]
+}
