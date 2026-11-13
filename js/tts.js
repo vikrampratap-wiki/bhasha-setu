@@ -22,13 +22,16 @@ class BhashaTTS {
     this.hindiFemaleVoice = null;
     this.hindiMaleVoice = null;
     this.isPlaying = false;
-    this.isolateHindiVoice = true; // Duck original speaker down to 6% while Hindi voice speaks so they don't clash!
-    this.mediaDuckVolume = 0.06;
-    this.volumeBoost = 1.45;
+    this.isolateHindiVoice = true; // Silence/duck original platform audio so voices never clash
+    this.silentOriginalPlatform = true; // 100% silent original platform speaker output (0.0 volume) — only Hindi dub is heard!
+    this.mediaDuckVolume = 0.0;
+    this.volumeBoost = 1.48;
     this.audioCtx = null;
     this.activeSourceNode = null;
+    this.activeCleanupNodes = null;
     this.unlocked = false;
     this.audioCache = new Map();
+    this.inflightFetches = new Map();
     this.currentSpeakToken = 0;
 
     this.initVoices();
@@ -88,7 +91,6 @@ class BhashaTTS {
         v => v.lang === 'hi-IN' || v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.includes('हिन्दी')
       );
 
-      // Only select genuinely natural voices if present
       const sortedHindi = hindiVoices.sort((a, b) => {
         const aScore = (a.name.includes('Natural') ? 5 : 0) + (a.name.includes('Online') ? 3 : 0) + (a.name.includes('Google') ? 2 : 0);
         const bScore = (b.name.includes('Natural') ? 5 : 0) + (b.name.includes('Online') ? 3 : 0) + (b.name.includes('Google') ? 2 : 0);
@@ -113,24 +115,24 @@ class BhashaTTS {
   }
 
   /**
-   * Isolate Hindi Translator Voice:
-   * Lowers original speaker/video volume to 6% (near-silent, without pausing the video!)
-   * while the Hindi translation is speaking so the two voices NEVER clash!
+   * Silent-Speaker Platform Mode & Single-Voice Isolation:
+   * When silentOriginalPlatform is true (default), original foreign media audio is kept at 0.0
+   * so you NEVER have to hear the raw foreign audio from your speakers — only the live Hindi dubbing cast!
    */
   setVoiceIsolationState(isHindiSpeaking) {
-    // 1. Prevent microphone from picking up the app's own Hindi TTS voice
     if (window.bhashaSTT) {
       window.bhashaSTT.isMutedForTTS = isHindiSpeaking;
     }
 
-    // 2. Isolate media video volume so original speaker doesn't talk loudly over Hindi voice
     const mediaEl = document.getElementById('media-video-preview');
     if (!mediaEl) return;
     mediaEl.muted = false;
-    if (isHindiSpeaking && this.isolateHindiVoice) {
-      mediaEl.volume = this.mediaDuckVolume; // 6% background whisper during Hindi dubbing
+    if (this.silentOriginalPlatform) {
+      mediaEl.volume = 0.0; // Completely silence original foreign speaker output
+    } else if (isHindiSpeaking && this.isolateHindiVoice) {
+      mediaEl.volume = 0.05; // 5% whisper during Hindi dubbing
     } else {
-      mediaEl.volume = 1.0; // Restore 100% original audio immediately when Hindi sentence finishes
+      mediaEl.volume = 0.85;
     }
   }
 
@@ -140,7 +142,9 @@ class BhashaTTS {
     if (active) {
       speakerBadge.classList.remove('hidden');
       const spkName = speaker ? speaker.name : 'मानवीय स्वर';
-      speakerBadge.textContent = `🔊 मानवीय स्वर: ${spkName}`;
+      const stagePos = speaker && speaker.pan < -0.05 ? '◀ बायां मंच' : (speaker && speaker.pan > 0.05 ? 'दायां मंच ▶' : '● केंद्र मंच');
+      const modelTag = speaker && speaker.voiceModel ? ` · मॉडल: ${speaker.voiceModel.toUpperCase()}` : '';
+      speakerBadge.textContent = `🎭 लाइव डबिंग: ${spkName} (${stagePos}${modelTag})`;
     } else {
       speakerBadge.classList.add('hidden');
     }
@@ -166,8 +170,89 @@ class BhashaTTS {
     }
   }
 
+  splitIntoSpeechChunks(text) {
+    const clean = (text || '').trim();
+    if (!clean) return [];
+    if (clean.length <= 165) return [clean];
+    const parts = clean.split(/(?<=[।?!.;,\n])\s+/);
+    const chunks = [];
+    let current = '';
+    for (const part of parts) {
+      if ((current + ' ' + part).trim().length <= 165) {
+        current = (current + ' ' + part).trim();
+      } else {
+        if (current) chunks.push(current);
+        current = part.trim().slice(0, 165);
+      }
+    }
+    if (current) chunks.push(current);
+    return chunks.length ? chunks : [clean.slice(0, 165)];
+  }
+
+  async fetchActorAudioBuffer(chunkText, lang = 'hi', speaker = null) {
+    const ctx = this.getAudioContext();
+    if (!ctx || !chunkText) return null;
+
+    const voiceModel = (speaker && speaker.voiceModel) ? speaker.voiceModel : ((lang || 'hi').split('-')[0].toLowerCase());
+    const ttsSpeed = (speaker && speaker.ttsSpeed) ? speaker.ttsSpeed : '1';
+    const sliceText = chunkText.trim().slice(0, 185);
+    const cacheKey = `${voiceModel}:${ttsSpeed}:${sliceText}`;
+
+    if (this.audioCache.has(cacheKey)) {
+      return this.audioCache.get(cacheKey);
+    }
+    if (this.inflightFetches.has(cacheKey)) {
+      return this.inflightFetches.get(cacheKey);
+    }
+
+    const promise = (async () => {
+      try {
+        const controller = new AbortController();
+        const fetchTimer = setTimeout(() => controller.abort(), 2400);
+        const url = `/api/tts?tl=${encodeURIComponent(lang || 'hi')}&voice=${encodeURIComponent(voiceModel)}&speed=${encodeURIComponent(ttsSpeed)}&q=${encodeURIComponent(sliceText)}`;
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(fetchTimer);
+
+        if (!response.ok) return null;
+        const arrayBuffer = await response.arrayBuffer();
+        if (!arrayBuffer || arrayBuffer.byteLength < 100) return null;
+
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+        if (this.audioCache.size >= 80) {
+          const oldest = this.audioCache.keys().next().value;
+          this.audioCache.delete(oldest);
+        }
+        this.audioCache.set(cacheKey, audioBuffer);
+        return audioBuffer;
+      } catch (_) {
+        return null;
+      } finally {
+        this.inflightFetches.delete(cacheKey);
+      }
+    })();
+
+    this.inflightFetches.set(cacheKey, promise);
+    return promise;
+  }
+
   /**
-   * Speak immediately in a pure, un-distorted human voice (cancels any stale overlapping voice)
+   * Predictive Pre-Buffering: warms up the Web Audio buffer while the speaker is still talking
+   */
+  prebuffer(text, lang = 'hi', speaker = null) {
+    if (!text || typeof fetch === 'undefined') return;
+    const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine) ||
+      (typeof window !== 'undefined' && window.bhashaTranslator && window.bhashaTranslator.forceOffline);
+    if (isOffline) return;
+
+    const targetSpeaker = speaker || (typeof window !== 'undefined' && window.bhashaAudio ? window.bhashaAudio.getCurrentSpeaker() : null);
+    const chunks = this.splitIntoSpeechChunks(text);
+    if (chunks.length > 0) {
+      this.fetchActorAudioBuffer(chunks[0], lang, targetSpeaker);
+    }
+  }
+
+  /**
+   * Speak immediately using the Actor's distinct Neural Voice Model, Vocal Tract Formant EQ, and 3D Stereo Stage Position
    */
   async speak(text, speaker = null, onEndCallback = null, lang = 'hi') {
     if (!text || !text.trim()) {
@@ -175,17 +260,17 @@ class BhashaTTS {
       return;
     }
 
+    const activeSpeaker = speaker || (typeof window !== 'undefined' && window.bhashaAudio ? window.bhashaAudio.getCurrentSpeaker() : null);
     const token = ++this.currentSpeakToken;
     this.stopActiveAudioOnly();
 
     this.isPlaying = true;
     this.setVoiceIsolationState(true);
-    this.updateSpeakerBadge(true, speaker);
+    this.updateSpeakerBadge(true, activeSpeaker);
 
-    // Keep rate natural (0.98 - 1.03) and NEVER distort pitch with robotic detuning!
-    const rawRate = speaker && speaker.rate !== undefined ? speaker.rate : 1.0;
-    const naturalRate = Math.max(0.96, Math.min(1.04, rawRate));
-    const isMale = speaker && speaker.gender === 'male';
+    const rawRate = activeSpeaker && activeSpeaker.rate !== undefined ? activeSpeaker.rate : 1.0;
+    const naturalRate = Math.max(0.92, Math.min(1.07, rawRate));
+    const isMale = activeSpeaker && activeSpeaker.gender === 'male';
 
     let played = false;
 
@@ -193,14 +278,12 @@ class BhashaTTS {
       const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine) ||
         (typeof window !== 'undefined' && window.bhashaTranslator && window.bhashaTranslator.forceOffline);
 
-      // 1. Pure Un-Warped Neural Audio via Web Audio API (/api/tts) only if online
       if (!isOffline && typeof fetch !== 'undefined') {
-        played = await this.playPureHumanNeuralAudio(text.trim(), lang, speaker, naturalRate, token);
+        played = await this.playPureHumanNeuralAudio(text.trim(), lang, activeSpeaker, naturalRate, token);
       }
 
-      // 2. Fallback to Natural Browser Voice (only if token is still current and neural wasn't played)
       if (!played && token === this.currentSpeakToken && this.synth) {
-        await this.playNaturalBrowserVoice(text.trim(), lang, isMale, naturalRate, token);
+        await this.playNaturalBrowserVoice(text.trim(), lang, isMale, naturalRate, token, activeSpeaker);
       }
     } catch (err) {
       console.warn('[TTS] speak warning:', err.message);
@@ -217,116 +300,134 @@ class BhashaTTS {
   }
 
   /**
-   * Plays un-distorted human neural audio (NO pitch detuning, NO formant warping!)
-   * Uses gentle acoustic EQ (warm chest resonance for male, clear presence for female)
+   * Plays Multi-Actor Studio Dubbing Audio:
+   * - Uses actor's distinct neural voice model (mr, ne, gu, en-IN, pa, bn, hi-IN)
+   * - Applies 3-Band Human Vocal Tract Formant Filtering (Chest Warmth + Vocal Tract Formant + Air Presence)
+   * - Applies 3D Stereo Stage Panning (-0.38 Left to +0.38 Right) so multiple speakers sound like a live dubbing cast in a room
    */
   async playPureHumanNeuralAudio(text, lang, speaker, naturalRate, token) {
     const ctx = this.getAudioContext();
     if (!ctx) return false;
 
     try {
-      const cleanLang = (lang || 'hi').split('-')[0].toLowerCase();
-      const sliceText = text.slice(0, 190);
-      const cacheKey = `${cleanLang}:${sliceText}`;
+      const chunks = this.splitIntoSpeechChunks(text);
+      if (chunks.length === 0) return false;
 
-      let audioBuffer = this.audioCache.get(cacheKey);
-      if (!audioBuffer) {
-        const controller = new AbortController();
-        const fetchTimer = setTimeout(() => controller.abort(), 2500);
-        const url = `/api/tts?tl=${encodeURIComponent(cleanLang)}&q=${encodeURIComponent(sliceText)}`;
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(fetchTimer);
+      // Kick off parallel fetch for all chunks so sentence transitions are gapless
+      const bufferPromises = chunks.map(c => this.fetchActorAudioBuffer(c, lang, speaker));
 
-        if (!response.ok || token !== this.currentSpeakToken) return false;
-        const arrayBuffer = await response.arrayBuffer();
-        if (!arrayBuffer || arrayBuffer.byteLength < 100 || token !== this.currentSpeakToken) return false;
+      for (let i = 0; i < bufferPromises.length; i++) {
+        if (token !== this.currentSpeakToken) return true;
+        const audioBuffer = await bufferPromises[i];
+        if (!audioBuffer) return false;
+        if (token !== this.currentSpeakToken) return true;
 
-        audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-        if (this.audioCache.size > 50) {
-          const firstKey = this.audioCache.keys().next().value;
-          this.audioCache.delete(firstKey);
+        if (ctx.state === 'suspended') {
+          await ctx.resume().catch(() => {});
         }
-        this.audioCache.set(cacheKey, audioBuffer);
-      }
 
-      if (token !== this.currentSpeakToken) return true;
+        await new Promise((resolve) => {
+          if (token !== this.currentSpeakToken) return resolve(true);
 
-      if (ctx.state === 'suspended') {
-        await ctx.resume().catch(() => {});
-      }
+          const source = ctx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.playbackRate.value = naturalRate;
 
-      return await new Promise((resolve) => {
-        if (token !== this.currentSpeakToken) return resolve(true);
+          // Band 1: Chest / Laryngeal Warmth Lowshelf (190 Hz)
+          const warmthFilter = ctx.createBiquadFilter();
+          warmthFilter.type = 'lowshelf';
+          warmthFilter.frequency.value = 190;
+          warmthFilter.gain.value = speaker && speaker.warmthDb !== undefined
+            ? speaker.warmthDb
+            : (speaker && speaker.gender === 'male' ? 4.0 : -1.5);
 
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        // Keep playbackRate near 1.0 and DO NOT detune cents (prevents metallic/machine sound!)
-        source.playbackRate.value = naturalRate;
+          // Band 2: Vocal Tract Formant Filter (480Hz deep baritone -> 1150Hz bright soprano)
+          const formantFilter = ctx.createBiquadFilter();
+          formantFilter.type = 'peaking';
+          formantFilter.frequency.value = speaker && speaker.formantHz ? speaker.formantHz : (speaker && speaker.gender === 'male' ? 540 : 960);
+          formantFilter.Q.value = 1.35;
+          formantFilter.gain.value = speaker && speaker.formantGain !== undefined ? speaker.formantGain : 3.5;
 
-        // Subtle studio broadcast EQ for warm human presence
-        const warmthFilter = ctx.createBiquadFilter();
-        warmthFilter.type = 'lowshelf';
-        warmthFilter.frequency.value = 220;
-        warmthFilter.gain.value = speaker && speaker.gender === 'male' ? 2.5 : 0.5;
+          // Band 3: Studio Air & Diction Presence Highshelf (3400 Hz)
+          const presenceFilter = ctx.createBiquadFilter();
+          presenceFilter.type = 'highshelf';
+          presenceFilter.frequency.value = 3400;
+          presenceFilter.gain.value = speaker && speaker.airDb !== undefined
+            ? speaker.airDb
+            : (speaker && speaker.gender === 'male' ? -1.0 : 3.0);
 
-        const presenceFilter = ctx.createBiquadFilter();
-        presenceFilter.type = 'peaking';
-        presenceFilter.frequency.value = 2800;
-        presenceFilter.Q.value = 1.0;
-        presenceFilter.gain.value = 1.8;
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.value = this.volumeBoost;
-
-        source.connect(warmthFilter);
-        warmthFilter.connect(presenceFilter);
-        presenceFilter.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        this.activeSourceNode = source;
-
-        const cleanupNodes = () => {
-          if (this.activeCleanupNodes === cleanupNodes) {
-            this.activeCleanupNodes = null;
+          // 3D Stereo Stage Placement (Left / Center / Right Dubbing Stage)
+          let pannerNode = null;
+          if (typeof ctx.createStereoPanner === 'function') {
+            pannerNode = ctx.createStereoPanner();
+            const panVal = speaker && speaker.pan !== undefined ? Math.max(-0.6, Math.min(0.6, speaker.pan)) : 0;
+            pannerNode.pan.value = panVal;
           }
-          try { source.disconnect(); } catch (_) {}
-          try { warmthFilter.disconnect(); } catch (_) {}
-          try { presenceFilter.disconnect(); } catch (_) {}
-          try { gainNode.disconnect(); } catch (_) {}
-        };
-        this.activeCleanupNodes = cleanupNodes;
 
-        const maxDurationMs = Math.ceil((audioBuffer.duration / naturalRate) * 1000) + 600;
-        const safetyTimer = setTimeout(() => {
-          if (this.activeSourceNode === source) this.activeSourceNode = null;
-          cleanupNodes();
-          resolve(true);
-        }, maxDurationMs);
+          const gainNode = ctx.createGain();
+          gainNode.gain.value = this.volumeBoost;
 
-        source.onended = () => {
-          clearTimeout(safetyTimer);
-          if (this.activeSourceNode === source) this.activeSourceNode = null;
-          cleanupNodes();
-          resolve(true);
-        };
+          source.connect(warmthFilter);
+          warmthFilter.connect(formantFilter);
+          formantFilter.connect(presenceFilter);
+          if (pannerNode) {
+            presenceFilter.connect(pannerNode);
+            pannerNode.connect(gainNode);
+          } else {
+            presenceFilter.connect(gainNode);
+          }
+          gainNode.connect(ctx.destination);
 
-        source.start(0);
-      });
+          this.activeSourceNode = source;
+
+          const cleanupNodes = () => {
+            if (this.activeCleanupNodes === cleanupNodes) {
+              this.activeCleanupNodes = null;
+            }
+            try { source.disconnect(); } catch (_) {}
+            try { warmthFilter.disconnect(); } catch (_) {}
+            try { formantFilter.disconnect(); } catch (_) {}
+            try { presenceFilter.disconnect(); } catch (_) {}
+            if (pannerNode) {
+              try { pannerNode.disconnect(); } catch (_) {}
+            }
+            try { gainNode.disconnect(); } catch (_) {}
+          };
+          this.activeCleanupNodes = cleanupNodes;
+
+          const maxDurationMs = Math.ceil((audioBuffer.duration / naturalRate) * 1000) + 500;
+          const safetyTimer = setTimeout(() => {
+            if (this.activeSourceNode === source) this.activeSourceNode = null;
+            cleanupNodes();
+            resolve(true);
+          }, maxDurationMs);
+
+          source.onended = () => {
+            clearTimeout(safetyTimer);
+            if (this.activeSourceNode === source) this.activeSourceNode = null;
+            cleanupNodes();
+            resolve(true);
+          };
+
+          source.start(0);
+        });
+      }
+      return true;
     } catch (err) {
       return false;
     }
   }
 
-  playNaturalBrowserVoice(text, lang, isMale, naturalRate, token) {
+  playNaturalBrowserVoice(text, lang, isMale, naturalRate, token, speaker = null) {
     return new Promise((resolve) => {
       if (!this.synth || token !== this.currentSpeakToken) return resolve(false);
 
       try {
         this.synth.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang === 'hi' ? 'hi-IN' : lang;
+        utterance.lang = (speaker && speaker.voiceModel) ? speaker.voiceModel : (lang === 'hi' ? 'hi-IN' : lang);
         utterance.volume = 1.0;
-        utterance.pitch = 1.0; // Pure 1.0 human pitch — never warp browser TTS pitch!
+        utterance.pitch = speaker && speaker.pitch ? Math.max(0.92, Math.min(1.08, speaker.pitch)) : 1.0;
         utterance.rate = naturalRate;
 
         if (lang === 'hi' || lang.startsWith('hi')) {
@@ -362,7 +463,7 @@ class BhashaTTS {
   }
 
   previewSpeaker(speaker) {
-    const sampleText = `नमस्ते! मैं ${speaker.name} हूँ। भाषा सेतु में मेरी आवाज़ बिल्कुल स्पष्ट और स्वाभाविक है।`;
+    const sampleText = `नमस्ते! मैं ${speaker.name} हूँ। लाइव मल्टी-एक्टर डबिंग में मेरी आवाज़ और मंच स्थान बिल्कुल अलग और मानवीय है।`;
     this.speak(sampleText, speaker);
   }
 }

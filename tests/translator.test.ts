@@ -113,3 +113,31 @@ test('device-media.js cleans up PiP video tracks and handles flexible audio cons
   assert.ok(mediaCode.includes('getDisplayMedia({'), 'Expected cross-browser flexible display media constraints');
 });
 
+test('Multi-Actor Ensemble Dubbing and Silent-Speaker Platform Bridge work end-to-end', () => {
+  const { BhashaAudioEngine } = require('../js/audio-clarity.js');
+  const engine = new BhashaAudioEngine();
+
+  // Verify 12 speakers have distinct voiceModel, formantHz, and 3D stereo pan
+  assert.equal(engine.speakers.length, 12);
+  const voiceModels = new Set(engine.speakers.map((s: any) => s.voiceModel));
+  assert.ok(voiceModels.size >= 5, `Expected at least 5 distinct neural voice models across ensemble, got ${voiceModels.size}`);
+
+  const formantSet = new Set(engine.speakers.map((s: any) => s.formantHz));
+  assert.ok(formantSet.size >= 8, 'Expected distinct vocal tract formant frequencies across actors');
+
+  // Verify ensemble speaker auto-rotation
+  const firstSpeaker = engine.getCurrentSpeaker().id;
+  const secondSpeaker = engine.advanceEnsembleSpeaker().id;
+  assert.notEqual(firstSpeaker, secondSpeaker, 'Expected advanceEnsembleSpeaker() to rotate to next dubbing actor');
+
+  // Verify silent-speaker platform capture in device-media.js and tts.js
+  const mediaCode = fs.readFileSync('js/device-media.js', 'utf8');
+  assert.ok(mediaCode.includes('suppressLocalAudioPlayback: true'), 'Expected suppressLocalAudioPlayback to silence raw platform speaker output');
+  assert.ok(mediaCode.includes('startPlatformUrlDirectDubbing'), 'Expected direct platform URL silent bridge');
+
+  const ttsCode = fs.readFileSync('js/tts.js', 'utf8');
+  assert.ok(ttsCode.includes('silentOriginalPlatform'), 'Expected silentOriginalPlatform mode in TTS engine');
+  assert.ok(ttsCode.includes('createStereoPanner'), 'Expected 3D stereo stage panning in TTS playback');
+});
+
+

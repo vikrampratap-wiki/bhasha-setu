@@ -1,7 +1,7 @@
 /**
  * BhashaSetu Service Worker - 100% Offline Capability
  */
-const CACHE_NAME = 'bhasha-setu-v2.0.0';
+const CACHE_NAME = 'bhasha-setu-v4.0.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -24,7 +24,6 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets for offline use...');
       return cache.addAll(ASSETS_TO_CACHE);
     }).then(() => self.skipWaiting())
   );
@@ -36,7 +35,6 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW] Deleting stale cache:', key);
             return caches.delete(key);
           }
         })
@@ -47,13 +45,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         if (
           networkResponse &&
           networkResponse.status === 200 &&
@@ -65,11 +61,15 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
+            return caches.match('./index.html');
+          }
+        });
+      })
   );
 });
+

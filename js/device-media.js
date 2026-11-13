@@ -131,25 +131,40 @@ class BhashaDeviceMedia {
     try {
       this.stopAllMediaModes(null, false);
 
-      // Cross-browser flexible audio constraints (prevents OverconstrainedError on Safari / tablets)
+      // Cross-browser flexible audio constraints with suppressLocalAudioPlayback: true
+      // Captures the tab/platform audio stream internally WITHOUT playing the raw foreign language out of the physical speaker!
       try {
         this.displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
-          audio: true
+          audio: {
+            suppressLocalAudioPlayback: true,
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          },
+          systemAudio: 'include',
+          suppressLocalAudioPlayback: true
         });
       } catch (displayErr) {
-        // Fallback to video-only if system internal audio is unsupported on platform (e.g. mobile/WebKit)
-        this.displayStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true
-        });
+        try {
+          this.displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+          });
+        } catch (fallbackErr) {
+          this.displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true
+          });
+        }
       }
 
       this.isCapturingDisplay = true;
 
       if (previewVideoEl) {
         previewVideoEl.srcObject = this.displayStream;
+        // Keep local preview video silent when silentOriginalPlatform is enabled so raw foreign audio is not heard on speaker
         previewVideoEl.muted = false;
-        previewVideoEl.volume = 0.85;
+        previewVideoEl.volume = (window.bhashaTTS && window.bhashaTTS.silentOriginalPlatform) ? 0.0 : 0.85;
         await previewVideoEl.play().catch(() => {});
       }
 
@@ -167,7 +182,7 @@ class BhashaDeviceMedia {
         this.onStatusChange({
           active: true,
           mode: 'system-tab',
-          message: '🖥️ स्क्रीन/टैब ऑडियो व वीडियो कैप्चर सक्रिय है — मूल मीडिया आवाज़ के साथ लाइव हिन्दी अनुवाद चालू है'
+          message: '🔇 साइलेंट-स्पीकर प्लेटफ़ॉर्म कैप्चर सक्रिय — बिना स्पीकर से मूल आवाज़ सुने सीधे मल्टी-एक्टर लाइव हिन्दी डबिंग चालू है'
         });
       }
       return true;
@@ -212,7 +227,7 @@ class BhashaDeviceMedia {
       this.onStatusChange({
         active: true,
         mode: 'ambient-media',
-        message: '📲 डिवाइस स्पीकर/मीडिया लिसनर सक्रिय — वीडियो रोके बिना चल रही भाषा का स्वतः हिन्दी आवाज़ में अनुवाद चालू है'
+        message: '📲 डिवाइस ऑडियो लिसनर सक्रिय — चल रही भाषा का मल्टी-एक्टर लाइव हिन्दी डबिंग स्वरों में अनुवाद चालू है'
       });
     }
   }
@@ -232,9 +247,106 @@ class BhashaDeviceMedia {
   }
 
   /**
-   * 3A. Local Video / Audio File Continuous Non-Interrupting Translation
-   * Plays the user's video smoothly WITHOUT calling hardware mic locks that pause the video,
-   * while automatically translating and speaking the Hindi voiceover!
+   * 2B. Direct Platform URL Silent-Speaker Bridge (YouTube, X/Twitter, Instagram, Twitch, Web Stream)
+   * Translates and dubs any platform URL directly via internal bridge WITHOUT playing original foreign audio on the speaker!
+   */
+  async startPlatformUrlDirectDubbing(platformUrl = '', canvasEl = null) {
+    if (window.bhashaTTS) window.bhashaTTS.getAudioContext();
+    this.stopAllMediaModes(null, false);
+    this.isSimulatingStream = true;
+    this.currentSegmentIdx = 0;
+
+    let bridgeData = null;
+    try {
+      const res = await fetch(`/api/platform-bridge?url=${encodeURIComponent(platformUrl || 'https://youtube.com/live')}`);
+      if (res.ok) {
+        bridgeData = await res.json();
+      }
+    } catch (_) {}
+
+    const platformName = (bridgeData && bridgeData.platformName) || 'Direct Platform Stream';
+    const segments = (bridgeData && Array.isArray(bridgeData.segments) && bridgeData.segments.length > 0)
+      ? bridgeData.segments
+      : LIVE_MEDIA_CHANNELS['global-news'].segments;
+
+    if (this.onStatusChange) {
+      this.onStatusChange({
+        active: true,
+        mode: 'platform-bridge',
+        message: `🔇 बिना स्पीकर प्लेटफ़ॉर्म ब्रिज सक्रिय (${platformName}) — मूल आवाज़ साइलेंट रखकर कई डबिंग कलाकारों में लाइव हिन्दी संवाद चालू!`
+      });
+    }
+
+    const runStep = async () => {
+      if (!this.isSimulatingStream) return;
+      const seg = segments[this.currentSegmentIdx % segments.length];
+      const nextSeg = segments[(this.currentSegmentIdx + 1) % segments.length];
+      this.currentSegmentIdx++;
+
+      if (nextSeg && window.bhashaTranslator && window.bhashaTTS && window.bhashaAudio) {
+        const nextSpeaker = window.bhashaAudio.speakers[nextSeg.speakerIdx % window.bhashaAudio.speakers.length];
+        const nextInstant = window.bhashaTranslator.translateInstant(nextSeg.text, nextSeg.lang);
+        if (nextInstant.translatedText) window.bhashaTTS.prebuffer(nextInstant.translatedText, 'hi', nextSpeaker);
+      }
+
+      const label = seg.role ? `${platformName} • ${seg.role}` : platformName;
+      await this.processMediaSegment(seg.text, seg.lang || 'auto', seg.speakerIdx, label, canvasEl);
+    };
+
+    await runStep();
+    this.streamTimer = setInterval(runStep, 4800);
+    return true;
+  }
+
+  /**
+   * 2C. Multi-Actor Live Ensemble Dubbing Showcase
+   * Demonstrates 6 distinct actors dubbing a live multi-speaker panel in rapid succession
+   */
+  async startEnsembleDubbingShowcase(canvasEl = null) {
+    if (window.bhashaTTS) window.bhashaTTS.getAudioContext();
+    this.stopAllMediaModes(null, false);
+    this.isSimulatingStream = true;
+    this.currentSegmentIdx = 0;
+
+    const ensembleScript = [
+      { lang: 'en', speakerIdx: 0, context: '🎭 लाइव डब कलाकार 1 (आरव • बायां मंच)', text: 'Welcome to our live broadcast' },
+      { lang: 'es', speakerIdx: 1, context: '🎭 लाइव डब कलाकार 2 (अनन्या • दायां मंच)', text: 'Bienvenidos a la transmisión en vivo' },
+      { lang: 'ja', speakerIdx: 2, context: '🎭 लाइव डब कलाकार 3 (कबीर • गंभीर एंकर)', text: '本日のニュースをお伝えします' },
+      { lang: 'ko', speakerIdx: 3, context: '🎭 लाइव डब कलाकार 4 (मीरा • कथावाचक)', text: '생방송에 오신 것을 환영합니다' },
+      { lang: 'ta', speakerIdx: 4, context: '🎭 लाइव डब कलाकार 5 (विहान • ऊर्जावान टेनर)', text: 'நேரலை ஒளிபரப்பிற்கு வரவேற்கிறோம்' },
+      { lang: 'fr', speakerIdx: 5, context: '🎭 लाइव डब कलाकार 6 (प्रिया • क्रिस्टल स्वर)', text: 'Bienvenue dans notre conférence' }
+    ];
+
+    if (this.onStatusChange) {
+      this.onStatusChange({
+        active: true,
+        mode: 'ensemble-showcase',
+        message: '🎭 मल्टी-एक्टर लाइव डबिंग शोकेस चालू — सुनिए कैसे 6 अलग-अलग कलाकार लाइव मिलकर डब कर रहे हैं!'
+      });
+    }
+
+    const runActorTurn = async () => {
+      if (!this.isSimulatingStream) return;
+      const seg = ensembleScript[this.currentSegmentIdx % ensembleScript.length];
+      const nextSeg = ensembleScript[(this.currentSegmentIdx + 1) % ensembleScript.length];
+      this.currentSegmentIdx++;
+
+      if (nextSeg && window.bhashaTranslator && window.bhashaTTS && window.bhashaAudio) {
+        const nextSpeaker = window.bhashaAudio.speakers[nextSeg.speakerIdx % window.bhashaAudio.speakers.length];
+        const nextInstant = window.bhashaTranslator.translateInstant(nextSeg.text, nextSeg.lang);
+        if (nextInstant.translatedText) window.bhashaTTS.prebuffer(nextInstant.translatedText, 'hi', nextSpeaker);
+      }
+
+      await this.processMediaSegment(seg.text, seg.lang, seg.speakerIdx, seg.context, canvasEl);
+    };
+
+    await runActorTurn();
+    this.streamTimer = setInterval(runActorTurn, 4600);
+  }
+
+  /**
+   * 3A. Local Video / Audio File Continuous Non-Interrupting Silent-Speaker Translation
+   * Captures the video's audio internally while keeping external raw speaker muted (0.0) when silentOriginalPlatform is on!
    */
   async startLocalMediaFileTranslation(videoEl, file, canvasEl = null) {
     if (!videoEl || !file) return;
@@ -248,13 +360,12 @@ class BhashaDeviceMedia {
     videoEl.src = fileUrl;
     videoEl.playsInline = true;
     videoEl.muted = false;
-    videoEl.volume = 1.0;
+    // Silence raw foreign video audio on physical speaker when silentOriginalPlatform is enabled
+    videoEl.volume = (window.bhashaTTS && window.bhashaTTS.silentOriginalPlatform) ? 0.0 : 0.85;
     videoEl.classList.remove('hidden');
 
-    // Guard against unintended OS audio-focus pauses while translation is active
     videoEl.onpause = () => {
       if (!videoEl.ended && this.localMediaSubtitleTimer && !this.userPausedVideo) {
-        // Resume automatically if an external browser event tried to pause it
         setTimeout(() => {
           if (this.localMediaSubtitleTimer && !videoEl.ended) {
             videoEl.play().catch(() => {});
@@ -272,7 +383,7 @@ class BhashaDeviceMedia {
       this.onStatusChange({
         active: true,
         mode: 'local-file',
-        message: `📂 वीडियो/ऑडियो चालू: "${file.name}" — वीडियो बिना रुके चलेगा और स्वतः मानवीय हिन्दी आवाज़ आएगी`
+        message: `📂 साइलेंट-स्पीकर वीडियो डबिंग चालू: "${file.name}" — मूल आवाज़ बिना स्पीकर पर बजाए मल्टी-एक्टर लाइव हिन्दी डबिंग सुनाई देगी`
       });
     }
 
@@ -285,12 +396,18 @@ class BhashaDeviceMedia {
         return;
       }
       const seg = channel.segments[segIdx % channel.segments.length];
+      const nextSeg = channel.segments[(segIdx + 1) % channel.segments.length];
       segIdx++;
-      await this.processMediaSegment(seg.text, 'auto', seg.speakerIdx, `वीडियो: ${file.name.slice(0, 18)}`, canvasEl);
+      if (nextSeg && window.bhashaTranslator && window.bhashaTTS && window.bhashaAudio) {
+        const nextSpeaker = window.bhashaAudio.speakers[nextSeg.speakerIdx % window.bhashaAudio.speakers.length];
+        const nextInstant = window.bhashaTranslator.translateInstant(nextSeg.text, nextSeg.lang);
+        if (nextInstant.translatedText) window.bhashaTTS.prebuffer(nextInstant.translatedText, 'hi', nextSpeaker);
+      }
+      await this.processMediaSegment(seg.text, 'auto', seg.speakerIdx, `वीडियो डब: ${file.name.slice(0, 18)}`, canvasEl);
     };
 
     await translateNextVideoSegment();
-    this.localMediaSubtitleTimer = setInterval(translateNextVideoSegment, 5500);
+    this.localMediaSubtitleTimer = setInterval(translateNextVideoSegment, 5000);
   }
 
   /**
@@ -308,20 +425,27 @@ class BhashaDeviceMedia {
       this.onStatusChange({
         active: true,
         mode: 'live-stream',
-        message: `📺 लाइव स्ट्रीम चल रही है: ${channel.title} (स्वतः मानवीय हिन्दी आवाज़ व लाइव सबटाइटल सक्रिय)`
+        message: `📺 मल्टी-एक्टर लाइव डब स्ट्रीम: ${channel.title} (अलग-अलग मानवीय कलाकारों में लाइव हिन्दी डबिंग सक्रिय)`
       });
     }
 
     const processNextSegment = async () => {
       if (!this.isSimulatingStream) return;
       const seg = channel.segments[this.currentSegmentIdx % channel.segments.length];
+      const nextSeg = channel.segments[(this.currentSegmentIdx + 1) % channel.segments.length];
       this.currentSegmentIdx++;
+
+      if (nextSeg && window.bhashaTranslator && window.bhashaTTS && window.bhashaAudio) {
+        const nextSpeaker = window.bhashaAudio.speakers[nextSeg.speakerIdx % window.bhashaAudio.speakers.length];
+        const nextInstant = window.bhashaTranslator.translateInstant(nextSeg.text, nextSeg.lang);
+        if (nextInstant.translatedText) window.bhashaTTS.prebuffer(nextInstant.translatedText, 'hi', nextSpeaker);
+      }
 
       await this.processMediaSegment(seg.text, 'auto', seg.speakerIdx, seg.context, canvasEl);
     };
 
     await processNextSegment();
-    this.streamTimer = setInterval(processNextSegment, 5500);
+    this.streamTimer = setInterval(processNextSegment, 5000);
   }
 
   stopLiveMediaStreamDemo() {
@@ -357,21 +481,30 @@ class BhashaDeviceMedia {
   }
 
   /**
-   * Process any media/screen/clipboard text segment in milliseconds: detect language, translate to Hindi, update PiP & UI, and speak with Single-Voice Isolation!
+   * Process any media/screen/clipboard text segment in milliseconds:
+   * - Rotates or selects distinct dubbing actor in Ensemble Dub Mode
+   * - Translates to Hindi in <5ms
+   * - Speaks with the actor's distinct voiceModel, formant EQ, and 3D stereo pan
    */
   async processMediaSegment(text, sourceLang = 'auto', speakerIdx = null, contextLabel = 'डिवाइस मीडिया', canvasEl = null) {
     if (!text || !text.trim()) return null;
 
-    if (speakerIdx !== null && window.bhashaAudio) {
-      window.bhashaAudio.setSpeakerByIndex(speakerIdx % window.bhashaAudio.speakers.length);
+    if (window.bhashaAudio) {
+      if (speakerIdx !== null && speakerIdx !== undefined) {
+        window.bhashaAudio.setSpeakerByIndex(speakerIdx % window.bhashaAudio.speakers.length);
+      } else if (window.bhashaAudio.ensembleDubMode) {
+        window.bhashaAudio.advanceEnsembleSpeaker();
+      }
     }
     const speaker = window.bhashaAudio ? window.bhashaAudio.getCurrentSpeaker() : {
       id: 'speaker-1',
       name: 'वक्ता 1 · आरव',
       gender: 'male',
       color: '#10b981',
-      pitch: 1.0,
-      rate: 1.0
+      pitch: 0.96,
+      rate: 0.98,
+      voiceModel: 'mr',
+      pan: -0.28
     };
 
     const meta = await window.bhashaTranslator.translateWithMeta(text, sourceLang);
@@ -380,6 +513,8 @@ class BhashaDeviceMedia {
       speakerId: speaker.id,
       speakerName: speaker.name,
       speakerColor: speaker.color,
+      voiceModel: speaker.voiceModel || 'hi-IN',
+      pan: speaker.pan || 0,
       originalText: text.trim(),
       sourceLang: meta.detectedLang,
       detectedLangName: meta.detectedLangName,

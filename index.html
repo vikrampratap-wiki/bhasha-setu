@@ -146,7 +146,12 @@
 
           <!-- Quick Jump to Device Media Translator -->
           <button id="open-media-tab-btn" class="px-3 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-colors whitespace-nowrap">
-            📺 स्क्रीन/मीडिया अनुवाद
+            🔇 बिना स्पीकर प्लेटफ़ॉर्म डबिंग
+          </button>
+
+          <!-- Quick Multi-Actor Live Ensemble Dubbing Showcase -->
+          <button id="open-ensemble-showcase-btn" class="px-3 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-colors whitespace-nowrap">
+            🎭 मल्टी-एक्टर लाइव डब टेस्ट
           </button>
 
           <!-- Action buttons -->
@@ -189,7 +194,7 @@
       <!-- Direct Live Speech & Quick Utterance Input Bar (Works even if mic is busy or in any browser) -->
       <div class="glass-panel p-3 rounded-2xl flex flex-col gap-2">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-[11px] text-slate-400 font-semibold">त्वरित वॉयस टेस्ट (चयनित मानवीय वक्ता में तुरंत सुनें):</span>
+          <span class="text-[11px] text-slate-400 font-semibold">त्वरित मल्टी-एक्टर डब टेस्ट (चयनित डब कलाकार में तुरंत सुनें):</span>
           <button type="button" data-voice-phrase="Hello, how are you? Welcome to our live broadcast." class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">English</button>
           <button type="button" data-voice-phrase="வணக்கம், நேரலை ஒளிபரப்பிற்கு வரவேற்கிறோம்" class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">தமிழ்</button>
           <button type="button" data-voice-phrase="안녕하세요, 생방송에 오신 것을 환영합니다" class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">한국어</button>
@@ -269,7 +274,7 @@
         <div class="text-xs text-slate-400 flex items-center gap-2">
           <span>अनुवाद लक्ष्य:</span>
           <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/30">
-            🇮🇳 हिन्दी (मानवीय स्वर)
+            🇮🇳 हिन्दी (12 डब कलाकार)
           </span>
         </div>
 
@@ -278,25 +283,29 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- TAB 2: डिवाइस व मीडिया अनुवाद (Tablet, Mobile & Desktop Media Translator) -->
+    <!-- TAB 2: डिवाइस व मीडिया अनुवाद (Silent-Speaker Platform & Ensemble Dubbing) -->
     <!-- ========================================================================= -->
     <div id="tab-media" class="tab-content hidden flex-1 flex flex-col gap-4">
       <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
         
-        <!-- Header & Audio Preservation Controls -->
+        <!-- Header & Silent-Speaker + Ensemble Dubbing Controls -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              📺 टैबलेट, मोबाइल और डेस्कटॉप मीडिया व स्क्रीन अनुवादक (नॉन-म्यूटिंग)
+              🔇 बिना स्पीकर से सुने किसी भी प्लेटफ़ॉर्म की आवाज़ का मल्टी-एक्टर लाइव हिन्दी डबिंग
             </h2>
             <p class="text-xs text-slate-400 mt-1">
-              मीडिया की मूल आवाज़ बंद किए बिना, चल रहे वीडियो/ऑडियो/टैब की भाषा को पहचानकर लाइव हिन्दी सबटाइटल और मानवीय स्वर में अनुवाद करता है।
+              बाहरी स्पीकर पर मूल विदेशी भाषा बजाए बिना (Silent-Speaker Capture), किसी भी प्लेटफ़ॉर्म/टैब/वीडियो की आवाज़ को सीधे पकड़कर कई अलग-अलग मानवीय कलाकारों (Multi-Actor Live Dub) में सुनें।
             </p>
           </div>
           <div class="flex items-center flex-wrap gap-2 shrink-0">
-            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-emerald-300 bg-emerald-950/50 px-3 py-2 rounded-xl border border-emerald-500/30" title="जब हिन्दी वक्ता बोलेगा तो मुख्य वक्ता की आवाज़ स्वतः धीमी (6%) हो जाएगी ताकि दोनों आवाज़ें एक साथ न टकराएं">
+            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-emerald-300 bg-emerald-950/50 px-3 py-2 rounded-xl border border-emerald-500/30" title="बाहरी स्पीकर पर मूल विदेशी भाषा की आवाज़ बंद (0%) रहेगी और केवल लाइव हिन्दी डबिंग सुनाई देगी">
               <input type="checkbox" id="keep-media-audio-toggle" checked class="rounded border-slate-700 text-emerald-500 focus:ring-0">
-              <span>🔇 वॉयस आइसोलेशन (दो आवाज़ें नहीं टकराएंगी)</span>
+              <span>🔇 मूल प्लेटफ़ॉर्म स्पीकर साइलेंट (केवल हिन्दी डब)</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-amber-300 bg-amber-950/40 px-3 py-2 rounded-xl border border-amber-500/30" title="प्रत्येक संवाद में अलग-अलग डब कलाकार और 3D स्टीरियो मंच स्वर उपयोग करें">
+              <input type="checkbox" id="ensemble-dub-toggle" checked class="rounded border-slate-700 text-amber-500 focus:ring-0">
+              <span>🎭 मल्टी-एक्टर लाइव डबिंग (कई लोगों की आवाज़)</span>
             </label>
             <button id="toggle-pip-btn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
               <span>🪟 फ्लोटिंग सबटाइटल (PiP)</span>
@@ -307,11 +316,26 @@
           </div>
         </div>
 
+        <!-- Direct Platform Silent-Speaker Bridge Bar -->
+        <div class="p-3.5 rounded-xl bg-slate-900/95 border border-amber-500/30 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <span class="text-xs font-bold text-amber-400 whitespace-nowrap">🔗 डायरेक्ट प्लेटफ़ॉर्म ब्रिज (बिना स्पीकर):</span>
+            <label for="platform-url-input" class="sr-only">प्लेटफ़ॉर्म लिंक पेस्ट करें</label>
+            <input type="url" id="platform-url-input" placeholder="YouTube, X (Twitter), Instagram, Twitch या किसी भी स्ट्रीम का लिंक पेस्ट करें..." class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+            <button id="start-platform-bridge-btn" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs whitespace-nowrap transition-all">
+              🔇 बिना स्पीकर लाइव डब शुरू करें
+            </button>
+          </div>
+          <button id="start-ensemble-showcase-btn" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs whitespace-nowrap transition-all">
+            🎭 6-कलाकार लाइव डब शोकेस सुनें
+          </button>
+        </div>
+
         <!-- Active Media Status Banner -->
         <div id="media-status-banner" class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-3 text-xs">
           <div class="flex items-center gap-2">
             <span id="media-status-text" class="text-slate-300 font-medium">
-              कोई भी कैप्चर मोड चुनें: स्क्रीन/टैब ऑडियो (डेस्कटॉप), स्पीकर लिसनर (मोबाइल/टैबलेट), या लाइव बहु-भाषी स्ट्रीम।
+              बिना स्पीकर के किसी भी प्लेटफ़ॉर्म/टैब की आवाज़ को कैप्चर करें और 12 अलग-अलग डबिंग कलाकारों में लाइव हिन्दी सुनें।
             </span>
           </div>
           <span id="media-detected-lang-pill" class="text-amber-400 font-semibold whitespace-nowrap">🌐 ऑटो पहचान तैयार</span>
@@ -320,49 +344,49 @@
         <!-- 3 Device Capture Mode Cards -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
           
-          <!-- Mode 1: Desktop / Tablet Screen & Browser Tab Audio Capture -->
+          <!-- Mode 1: Silent-Speaker Internal Tab/Platform Audio Capture -->
           <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between gap-3">
             <div>
-              <div class="text-xs font-semibold text-amber-400 mb-1">1. डेस्कटॉप व टैबलेट (Browser Tab / Screen)</div>
-              <h3 class="text-sm font-bold text-white">🖥️ स्क्रीन व टैब ऑडियो कैप्चर</h3>
+              <div class="text-xs font-semibold text-amber-400 mb-1">1. बिना स्पीकर आंतरिक ऑडियो (Silent-Speaker Tab Capture)</div>
+              <h3 class="text-sm font-bold text-white">🔇 किसी भी प्लेटफ़ॉर्म की आंतरिक आवाज़ पकड़ें</h3>
               <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                ब्राउज़र में चल रहे YouTube, न्यूज़, मीटिंग (Zoom/Meet) या किसी भी टैब की आवाज़ को बिना म्यूट किए पकड़कर लाइव हिन्दी में बदलें।
+                YouTube, OTT, मीटिंग या किसी भी टैब की मूल आवाज़ को स्पीकर पर सुनाए बिना (`suppressLocalAudioPlayback`) सीधे मल्टी-एक्टर हिन्दी डबिंग में सुनें।
               </p>
             </div>
             <button id="start-screen-capture-btn" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-all">
-              🖥️ स्क्रीन / टैब ऑडियो कैप्चर शुरू करें
+              🔇 बिना स्पीकर प्लेटफ़ॉर्म ऑडियो कैप्चर करें
             </button>
           </div>
 
           <!-- Mode 2: Mobile / Tablet / Speaker Ambient Media Listener -->
           <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between gap-3">
             <div>
-              <div class="text-xs font-semibold text-emerald-400 mb-1">2. मोबाइल, टैबलेट व स्पीकर (Universal)</div>
-              <h3 class="text-sm font-bold text-white">📲 स्पीकर व एम्बिएंट मीडिया लिसनर</h3>
+              <div class="text-xs font-semibold text-emerald-400 mb-1">2. मोबाइल व टैबलेट लाइव डबिंग (Multi-Actor)</div>
+              <h3 class="text-sm font-bold text-white">📲 डिवाइस मीडिया मल्टी-एक्टर डब लिसनर</h3>
               <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                मोबाइल या टैबलेट की मीडिया आवाज़ बंद किए बिना, स्पीकर पर बज रही किसी भी भाषा की आवाज़ को सुनकर मानवीय स्वर में अनुवाद करें।
+                किसी भी ऐप पर चल रहे संवाद को पकड़कर स्वचालित रूप से अलग-अलग पुरुष व महिला डब कलाकारों के स्वरों में बदलें।
               </p>
             </div>
             <button id="start-ambient-media-btn" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs transition-all">
-              📲 स्पीकर / मीडिया लिसनर चालू करें
+              📲 मल्टी-एक्टर मीडिया लिसनर चालू करें
             </button>
           </div>
 
-          <!-- Mode 3: Multi-Language Live Broadcast Stream & Local File Player -->
+          <!-- Mode 3: Multi-Language Live Broadcast Stream & Silent-Speaker Local File Player -->
           <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between gap-3">
             <div>
-              <div class="text-xs font-semibold text-sky-400 mb-1">3. लाइव बहु-भाषी स्ट्रीम व वीडियो फ़ाइल</div>
-              <h3 class="text-sm font-bold text-white">📡 लाइव मल्टी-लैंग्वेज मीडिया स्ट्रीम</h3>
+              <div class="text-xs font-semibold text-sky-400 mb-1">3. साइलेंट-स्पीकर वीडियो फ़ाइल व लाइव चैनल</div>
+              <h3 class="text-sm font-bold text-white">📡 मल्टी-एक्टर लाइव डब स्ट्रीम व वीडियो</h3>
               <label for="media-channel-select" class="sr-only">मीडिया चैनल चुनें</label>
               <select id="media-channel-select" class="w-full mt-2 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500">
-                <option value="global-news">🌍 ग्लोबल न्यूज़ (EN, ES, JA, KO, FR, AR, RU, DE)</option>
-                <option value="indian-regional">🇮🇳 भारतीय प्रादेशिक संवाद (TA, TE, ML, KN, BN, MR, GU, PA)</option>
-                <option value="tech-conference">💻 टेक व मेडिकल समिट (EN, ZH, PT, IT, TR, TH, VI)</option>
+                <option value="global-news">🌍 ग्लोबल न्यूज़ पैनल (8 अलग-अलग डब कलाकार)</option>
+                <option value="indian-regional">🇮🇳 भारतीय प्रादेशिक संवाद (8 अलग-अलग डब कलाकार)</option>
+                <option value="tech-conference">💻 टेक व मेडिकल समिट (मल्टी-एक्टर पैनल डबिंग)</option>
               </select>
             </div>
             <div class="flex items-center gap-2">
               <button id="start-stream-demo-btn" class="flex-1 py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-slate-950 font-bold text-xs transition-all">
-                ▶️ लाइव स्ट्रीम अनुवाद चलाएं
+                ▶️ मल्टी-एक्टर लाइव डब चलाएं
               </button>
               <label class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer transition-all whitespace-nowrap">
                 📂 फ़ाइल चुनें

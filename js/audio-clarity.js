@@ -27,25 +27,33 @@ class BhashaAudioEngine {
     this.bufferSize = 1024;
     this.audioBuffer = new Float32Array(this.bufferSize);
 
-    // 12 Natural Human Speaker Profiles (Natural human pitch 0.92x - 1.07x, never robotic)
+    // 12 Multi-Actor Live Ensemble Dubbing Profiles
+    // Each speaker has a distinct Neural Voice Model (hi-IN, mr, ne, gu, en-IN, pa, bn),
+    // distinct Vocal Tract Formant Frequency (formantHz 480Hz-1150Hz), and 3D Stereo Stage Pan (-0.38 to +0.38)
     this.speakers = [
-      { id: 'speaker-1', name: 'वक्ता 1 · आरव', gender: 'male', color: '#10b981', pitch: 0.96, rate: 0.98, warmthDb: 3.5, f0Min: 95, f0Max: 135, desc: 'पुरुष • शांत व स्पष्ट मानवीय स्वर' },
-      { id: 'speaker-2', name: 'वक्ता 2 · अनन्या', gender: 'female', color: '#3b82f6', pitch: 1.04, rate: 1.00, warmthDb: -1.5, f0Min: 185, f0Max: 235, desc: 'महिला • मधुर व स्वाभाविक मानवीय स्वर' },
-      { id: 'speaker-3', name: 'वक्ता 3 · कबीर', gender: 'male', color: '#f59e0b', pitch: 0.92, rate: 0.96, warmthDb: 5.0, f0Min: 75, f0Max: 110, desc: 'पुरुष • गंभीर न्यूज़ एंकर मानवीय स्वर' },
-      { id: 'speaker-4', name: 'वक्ता 4 · मीरा', gender: 'female', color: '#ec4899', pitch: 1.02, rate: 0.95, warmthDb: 1.0, f0Min: 165, f0Max: 205, desc: 'महिला • सौम्य कथावाचक मानवीय स्वर' },
-      { id: 'speaker-5', name: 'वक्ता 5 · विहान', gender: 'male', color: '#06b6d4', pitch: 1.00, rate: 1.02, warmthDb: 2.0, f0Min: 130, f0Max: 165, desc: 'पुरुष • ऊर्जावान संवादी मानवीय स्वर' },
-      { id: 'speaker-6', name: 'वक्ता 6 · प्रिया', gender: 'female', color: '#8b5cf6', pitch: 1.06, rate: 0.99, warmthDb: -2.0, f0Min: 215, f0Max: 265, desc: 'महिला • स्पष्ट शिक्षिका मानवीय स्वर' },
-      { id: 'speaker-7', name: 'वक्ता 7 · आदित्य', gender: 'male', color: '#14b8a6', pitch: 0.94, rate: 0.94, warmthDb: 4.5, f0Min: 85, f0Max: 120, desc: 'पुरुष • वरिष्ठ विशेषज्ञ मानवीय स्वर' },
-      { id: 'speaker-8', name: 'वक्ता 8 · काव्या', gender: 'female', color: '#f43f5e', pitch: 1.07, rate: 1.03, warmthDb: -2.5, f0Min: 235, f0Max: 295, desc: 'महिला • स्पष्ट युवा मानवीय स्वर' },
-      { id: 'speaker-9', name: 'वक्ता 9 · रोहन', gender: 'male', color: '#84cc16', pitch: 0.98, rate: 1.00, warmthDb: 2.5, f0Min: 115, f0Max: 150, desc: 'पुरुष • पॉडकास्ट होस्ट मानवीय स्वर' },
-      { id: 'speaker-10', name: 'वक्ता 10 · नेहा', gender: 'female', color: '#a855f7', pitch: 1.03, rate: 0.98, warmthDb: 0.0, f0Min: 175, f0Max: 220, desc: 'महिला • सौम्य सहायक मानवीय स्वर' },
-      { id: 'speaker-11', name: 'वक्ता 11 · अर्जुन', gender: 'male', color: '#eab308', pitch: 0.93, rate: 1.01, warmthDb: 4.0, f0Min: 80, f0Max: 118, desc: 'पुरुष • ओजस्वी व मुखर मानवीय स्वर' },
-      { id: 'speaker-12', name: 'वक्ता 12 · दिव्या', gender: 'female', color: '#0ea5e9', pitch: 1.05, rate: 1.01, warmthDb: -1.0, f0Min: 200, f0Max: 250, desc: 'महिला • स्पष्ट संवाददाता मानवीय स्वर' }
+      { id: 'speaker-1', name: 'वक्ता 1 · आरव', gender: 'male', color: '#10b981', pitch: 0.96, rate: 0.98, voiceModel: 'mr', ttsSpeed: '1', pan: -0.28, warmthDb: 4.5, formantHz: 540, formantGain: 3.8, airDb: -1.5, f0Min: 95, f0Max: 135, desc: 'पुरुष • मुख्य होस्ट (गंभीर बैरिटोन • बायां मंच)' },
+      { id: 'speaker-2', name: 'वक्ता 2 · अनन्या', gender: 'female', color: '#3b82f6', pitch: 1.04, rate: 1.02, voiceModel: 'hi-IN', ttsSpeed: '1', pan: 0.28, warmthDb: -2.0, formantHz: 980, formantGain: 3.5, airDb: 3.2, f0Min: 185, f0Max: 235, desc: 'महिला • सह-होस्ट (मधुर सोप्रानो • दायां मंच)' },
+      { id: 'speaker-3', name: 'वक्ता 3 · कबीर', gender: 'male', color: '#f59e0b', pitch: 0.92, rate: 0.94, voiceModel: 'ne', ttsSpeed: '0.85', pan: -0.15, warmthDb: 6.0, formantHz: 480, formantGain: 4.5, airDb: -2.5, f0Min: 75, f0Max: 110, desc: 'पुरुष • वरिष्ठ न्यूज़ एंकर (गहरा बास • केंद्र-बायां)' },
+      { id: 'speaker-4', name: 'वक्ता 4 · मीरा', gender: 'female', color: '#ec4899', pitch: 1.02, rate: 0.95, voiceModel: 'gu', ttsSpeed: '0.85', pan: 0.15, warmthDb: 1.5, formantHz: 820, formantGain: 3.0, airDb: 2.0, f0Min: 165, f0Max: 205, desc: 'महिला • डॉक्यूमेंट्री कथावाचक (सौम्य ऑल्टो • केंद्र-दायां)' },
+      { id: 'speaker-5', name: 'वक्ता 5 · विहान', gender: 'male', color: '#06b6d4', pitch: 1.00, rate: 1.05, voiceModel: 'en-IN', ttsSpeed: '1', pan: -0.35, warmthDb: 2.2, formantHz: 660, formantGain: 3.4, airDb: 1.5, f0Min: 130, f0Max: 165, desc: 'पुरुष • टेक व स्पोर्ट्स कमेंटेटर (ऊर्जावान टेनर • बायां मंच)' },
+      { id: 'speaker-6', name: 'वक्ता 6 · प्रिया', gender: 'female', color: '#8b5cf6', pitch: 1.06, rate: 1.00, voiceModel: 'bn', ttsSpeed: '1', pan: 0.35, warmthDb: -2.5, formantHz: 1060, formantGain: 3.6, airDb: 3.8, f0Min: 215, f0Max: 265, desc: 'महिला • विशेषज्ञ शिक्षिका (स्पष्ट क्रिस्टल • दायां मंच)' },
+      { id: 'speaker-7', name: 'वक्ता 7 · आदित्य', gender: 'male', color: '#14b8a6', pitch: 0.94, rate: 0.93, voiceModel: 'pa', ttsSpeed: '0.85', pan: -0.22, warmthDb: 5.2, formantHz: 510, formantGain: 4.0, airDb: -1.8, f0Min: 85, f0Max: 120, desc: 'पुरुष • विश्लेषक व पैनलिस्ट (परिपक्व स्वर • बायां मंच)' },
+      { id: 'speaker-8', name: 'वक्ता 8 · काव्या', gender: 'female', color: '#f43f5e', pitch: 1.07, rate: 1.06, voiceModel: 'hi-IN', ttsSpeed: '1', pan: 0.22, warmthDb: -3.0, formantHz: 1150, formantGain: 3.8, airDb: 4.2, f0Min: 235, f0Max: 295, desc: 'महिला • युवा संवाददाता (तेज़ व जीवंत • दायां मंच)' },
+      { id: 'speaker-9', name: 'वक्ता 9 · रोहन', gender: 'male', color: '#84cc16', pitch: 0.98, rate: 1.01, voiceModel: 'mr', ttsSpeed: '1', pan: -0.10, warmthDb: 3.2, formantHz: 600, formantGain: 3.2, airDb: 0.8, f0Min: 115, f0Max: 150, desc: 'पुरुष • पॉडकास्ट संवाददाता (स्वाभाविक केंद्र स्वर)' },
+      { id: 'speaker-10', name: 'वक्ता 10 · नेहा', gender: 'female', color: '#a855f7', pitch: 1.03, rate: 0.97, voiceModel: 'ne', ttsSpeed: '1', pan: 0.10, warmthDb: 0.5, formantHz: 890, formantGain: 3.2, airDb: 2.5, f0Min: 175, f0Max: 220, desc: 'महिला • अतिथि वक्ता (शांत संवादी • केंद्र-दायां)' },
+      { id: 'speaker-11', name: 'वक्ता 11 · अर्जुन', gender: 'male', color: '#eab308', pitch: 0.93, rate: 1.02, voiceModel: 'pa', ttsSpeed: '1', pan: -0.38, warmthDb: 4.8, formantHz: 525, formantGain: 4.2, airDb: -0.5, f0Min: 80, f0Max: 118, desc: 'पुरुष • मुख्य वक्ता (ओजस्वी मुखर स्वर • बायां मंच)' },
+      { id: 'speaker-12', name: 'वक्ता 12 · दिव्या', gender: 'female', color: '#0ea5e9', pitch: 1.05, rate: 1.03, voiceModel: 'gu', ttsSpeed: '1', pan: 0.38, warmthDb: -1.5, formantHz: 1020, formantGain: 3.5, airDb: 3.5, f0Min: 200, f0Max: 250, desc: 'महिला • लाइव रिपोर्टर (स्पष्ट ब्राइट स्वर • दायां मंच)' }
     ];
     this.currentSpeakerIndex = 0;
     this.autoDiarization = true;
+    this.ensembleDubMode = true; // Automatically rotates actors on consecutive turns for live multi-actor dubbing feel
     this.lastDetectedPitch = 0;
     this.onSpeakerDetected = null;
+  }
+
+  advanceEnsembleSpeaker() {
+    this.currentSpeakerIndex = (this.currentSpeakerIndex + 1) % this.speakers.length;
+    return this.getCurrentSpeaker();
   }
 
   getAudioContext() {

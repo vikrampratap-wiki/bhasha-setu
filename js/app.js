@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const clearChatBtn = document.getElementById('clear-chat-btn');
   const exportChatBtn = document.getElementById('export-chat-btn');
   const openMediaTabBtn = document.getElementById('open-media-tab-btn');
+  const openEnsembleShowcaseBtn = document.getElementById('open-ensemble-showcase-btn');
   const toastContainer = document.getElementById('toast-container');
 
   // Direct Live Conversation Input & Phrase Chips (Tab 1)
@@ -33,6 +34,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Device & Media Tab Elements
   const keepMediaAudioToggle = document.getElementById('keep-media-audio-toggle');
+  const ensembleDubToggle = document.getElementById('ensemble-dub-toggle');
+  const platformUrlInput = document.getElementById('platform-url-input');
+  const startPlatformBridgeBtn = document.getElementById('start-platform-bridge-btn');
+  const startEnsembleShowcaseBtn = document.getElementById('start-ensemble-showcase-btn');
   const startScreenCaptureBtn = document.getElementById('start-screen-capture-btn');
   const startAmbientMediaBtn = document.getElementById('start-ambient-media-btn');
   const mediaChannelSelect = document.getElementById('media-channel-select');
@@ -203,6 +208,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     openMediaTabBtn.addEventListener('click', () => switchTab('media'));
   }
 
+  if (openEnsembleShowcaseBtn) {
+    openEnsembleShowcaseBtn.addEventListener('click', async () => {
+      await window.bhashaDeviceMedia.startEnsembleDubbingShowcase(mediaBroadcastCanvas);
+      showToast('🎭 6-कलाकार लाइव डबिंग शोकेस शुरू — हर संवाद अलग-अलग कलाकार की मानवीय आवाज़ में!');
+    });
+  }
+
   // 5. Render 12 Human Speaker Selector Buttons
   function renderSpeakerPills() {
     if (!speakerPillsContainer) return;
@@ -281,12 +293,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const langLabel = msg.detectedLangName || window.bhashaTranslator.getLanguageName(msg.sourceLang || 'auto');
     const contextText = msg.mediaContext ? ` · ${msg.mediaContext}` : '';
     const latencyBadge = `⚡ ${msg.latencyMs !== undefined ? msg.latencyMs : 1} ms`;
+    const spkMeta = window.bhashaAudio && window.bhashaAudio.speakers.find(s => s.id === msg.speakerId);
+    const voiceModelCode = (msg.voiceModel || (spkMeta && spkMeta.voiceModel) || 'hi-IN').toUpperCase();
+    const panVal = msg.pan !== undefined ? msg.pan : (spkMeta ? spkMeta.pan : 0);
+    const stageBadge = panVal < -0.05 ? '◀ बायां मंच' : (panVal > 0.05 ? 'दायां मंच ▶' : '● केंद्र मंच');
 
     card.innerHTML = `
       <div class="flex items-center justify-between flex-wrap gap-2 mb-2 text-xs text-slate-400">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="w-3 h-3 rounded-full shadow shrink-0" style="background-color: ${msg.speakerColor}"></span>
           <span class="font-bold text-slate-200">${msg.speakerName}</span>
+          <span class="px-1.5 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-[10px] text-cyan-300 font-mono">🎭 ${voiceModelCode} · ${stageBadge}</span>
           <span aria-hidden="true">·</span>
           <span class="text-amber-300 font-medium">🌐 ${langLabel}</span>
           <span aria-hidden="true">·</span>
@@ -362,17 +379,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 9. Speech-to-Text Callbacks & Real-Time Millisecond Live Translation Preview
+  // 9. Speech-to-Text Callbacks & Real-Time Millisecond Live Translation + Predictive TTS Pre-Buffering
   window.bhashaSTT.onInterimResult = (interim) => {
     const selectedLang = langSelect ? langSelect.value : 'auto';
     const instantMeta = window.bhashaTranslator.translateInstant(interim, selectedLang);
+
+    // Pre-buffer the translated Hindi audio chunks in the background WHILE the speaker is still talking!
+    if (instantMeta.translatedText && window.bhashaTTS) {
+      window.bhashaTTS.prebuffer(instantMeta.translatedText, 'hi');
+    }
 
     if (interimBox) {
       interimBox.classList.remove('hidden');
       interimBox.innerHTML = `
         <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
           <span class="text-amber-400 font-bold">🎙️ ${window.bhashaAudio.getCurrentSpeaker().name} बोल रहे हैं (${instantMeta.detectedLangName}):</span>
-          <span class="text-emerald-400 font-mono">⚡ ${instantMeta.latencyMs} ms लाइव अनुवाद</span>
+          <span class="text-emerald-400 font-mono">⚡ ${instantMeta.latencyMs} ms लाइव अनुवाद + प्री-बफ़र</span>
         </div>
         <div class="italic text-slate-300 text-xs mb-1">"${interim}"</div>
         <div class="text-amber-200 font-semibold text-sm">🇮🇳 ${instantMeta.translatedText}</div>
@@ -486,6 +508,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.bhashaDeviceMedia.onTranslatedSegment = (record) => {
       appendMessageUI(record, true);
       updateLiveSubtitleBox(record);
+      renderSpeakerPills();
+      renderSpeakerProfiles();
     };
 
     window.bhashaDeviceMedia.onStatusChange = (status) => {
@@ -535,14 +559,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Single-Voice Isolation Toggle (prevents original media speaker and Hindi speaker from talking simultaneously)
+  // Silent-Speaker Platform Mode Toggle (keeps original platform speaker muted at 0% so only Hindi dubbing plays)
   if (keepMediaAudioToggle) {
     keepMediaAudioToggle.addEventListener('change', () => {
+      window.bhashaTTS.silentOriginalPlatform = keepMediaAudioToggle.checked;
       window.bhashaTTS.isolateHindiVoice = keepMediaAudioToggle.checked;
+      if (mediaVideoPreview) {
+        mediaVideoPreview.volume = keepMediaAudioToggle.checked ? 0.0 : 0.85;
+      }
       showToast(
         keepMediaAudioToggle.checked
-          ? '🔇 वॉयस आइसोलेशन सक्रिय: जब हिन्दी वक्ता बोलेगा तो मुख्य वक्ता की आवाज़ स्वतः धीमी (6%) हो जाएगी'
-          : '🔊 मूल मीडिया आवाज़ और हिन्दी आवाज़ दोनों एक साथ चलेंगी'
+          ? '🔇 साइलेंट-स्पीकर मोड सक्रिय: मूल विदेशी आवाज़ स्पीकर पर बंद रहेगी, केवल लाइव हिन्दी डबिंग सुनाई देगी'
+          : '🔊 मूल मीडिया आवाज़ और हिन्दी डबिंग दोनों चलेंगी'
+      );
+    });
+  }
+
+  // Multi-Actor Ensemble Dubbing Toggle
+  if (ensembleDubToggle) {
+    ensembleDubToggle.addEventListener('change', () => {
+      window.bhashaAudio.ensembleDubMode = ensembleDubToggle.checked;
+      showToast(
+        ensembleDubToggle.checked
+          ? '🎭 मल्टी-एक्टर लाइव डबिंग चालू: प्रत्येक संवाद अलग-अलग कलाकार और 3D मंच से बोला जाएगा'
+          : '🎙️ एकल चयनित वक्ता मोड चालू'
       );
     });
   }
@@ -587,8 +627,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // =========================================================================
-  // 10. Device & Media Tab Controls (Non-Muting Media Translation)
+  // 10. Device & Media Tab Controls (Silent-Speaker Platform & Ensemble Dubbing)
   // =========================================================================
+  if (startPlatformBridgeBtn) {
+    startPlatformBridgeBtn.addEventListener('click', async () => {
+      const urlVal = platformUrlInput ? platformUrlInput.value.trim() : '';
+      await window.bhashaDeviceMedia.startPlatformUrlDirectDubbing(urlVal, mediaBroadcastCanvas);
+      showToast('🔇 बिना स्पीकर प्लेटफ़ॉर्म ब्रिज चालू — कई कलाकारों में लाइव हिन्दी डबिंग शुरू!');
+    });
+  }
+
+  if (startEnsembleShowcaseBtn) {
+    startEnsembleShowcaseBtn.addEventListener('click', async () => {
+      await window.bhashaDeviceMedia.startEnsembleDubbingShowcase(mediaBroadcastCanvas);
+      showToast('🎭 6-कलाकार लाइव डबिंग शोकेस शुरू — सुनिए अलग-अलग कलाकारों का लाइव संवाद!');
+    });
+  }
+
   if (startScreenCaptureBtn) {
     startScreenCaptureBtn.addEventListener('click', async () => {
       try {
@@ -597,7 +652,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           mediaVideoPreview,
           langSelect ? langSelect.value : 'auto'
         );
-        showToast('🖥️ स्क्रीन/टैब ऑडियो कैप्चर चालू — मूल मीडिया आवाज़ भी चालू है');
+        showToast('🔇 साइलेंट-स्पीकर प्लेटफ़ॉर्म ऑडियो कैप्चर चालू — बिना स्पीकर से सुने मल्टी-एक्टर हिन्दी डबिंग');
       } catch (err) {
         if (mediaVideoPreview) mediaVideoPreview.classList.add('hidden');
         showToast(err.message, 'error');
@@ -609,7 +664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     startAmbientMediaBtn.addEventListener('click', async () => {
       try {
         await window.bhashaDeviceMedia.startAmbientMediaListener(langSelect ? langSelect.value : 'auto');
-        showToast('📲 स्पीकर व मीडिया लिसनर सक्रिय — मीडिया की आवाज़ बंद किए बिना अनुवाद चालू');
+        showToast('📲 मल्टी-एक्टर डिवाइस ऑडियो लिसनर सक्रिय');
       } catch (err) {
         showToast(`स्पीकर लिसनर शुरू नहीं हो सका: ${err.message}`, 'error');
       }
@@ -620,7 +675,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     startStreamDemoBtn.addEventListener('click', async () => {
       const channelKey = mediaChannelSelect ? mediaChannelSelect.value : 'global-news';
       await window.bhashaDeviceMedia.startLiveMediaStreamDemo(channelKey, mediaBroadcastCanvas);
-      showToast('📺 लाइव बहु-भाषी मीडिया स्ट्रीम और मानवीय हिन्दी स्वर अनुवाद शुरू!');
+      showToast('📺 मल्टी-एक्टर लाइव डबिंग स्ट्रीम शुरू!');
     });
   }
 
@@ -831,14 +886,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.bhashaAudio.speakers.forEach((spk, idx) => {
       const row = document.createElement('div');
       row.className = 'p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-between gap-3';
+      const stageTag = spk.pan < -0.05 ? '◀ बायां मंच' : (spk.pan > 0.05 ? 'दायां मंच ▶' : '● केंद्र मंच');
+      const vModel = (spk.voiceModel || 'hi-IN').toUpperCase();
       row.innerHTML = `
         <div class="flex items-center gap-3 min-w-0">
           <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs shadow shrink-0 tabular-nums" style="background-color: ${spk.color}">
             ${idx + 1}
           </span>
           <div class="min-w-0">
-            <h4 class="font-bold text-slate-200 text-sm truncate">${spk.name}</h4>
-            <p class="text-xs text-slate-400 truncate">${spk.desc} • पिच: ${spk.pitch}x • गति: ${spk.rate}x</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="font-bold text-slate-200 text-sm truncate">${spk.name}</h4>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-amber-300 font-mono">मॉडल: ${vModel}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-cyan-300 font-mono">${stageTag}</span>
+            </div>
+            <p class="text-xs text-slate-400 truncate mt-0.5">${spk.desc} • फ़ॉर्मेंट: ${spk.formantHz || 700}Hz • गति: ${spk.rate}x</p>
           </div>
         </div>
 
