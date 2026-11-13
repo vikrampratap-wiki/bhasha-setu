@@ -1,12 +1,14 @@
 /**
  * BhashaSetu - Voice-to-Text (STT) Module
- * Handles continuous speech recognition across multiple languages and integrates with Audio Clarity & Diarizer.
+ * Handles continuous speech recognition across 40+ Indian & International languages
+ * and integrates with Audio Clarity, Speaker Diarizer & Device/Media Audio Capture.
  */
 class BhashaSTT {
   constructor() {
     this.recognition = null;
     this.isRecording = false;
-    this.currentLanguage = 'auto'; // 'auto', 'en-US', 'es-ES', 'fr-FR', etc.
+    this.currentLanguage = 'auto';
+    this.captureMode = 'mic'; // 'mic' | 'ambient-media' | 'system-tab'
     this.stream = null;
 
     // Callbacks
@@ -33,20 +35,19 @@ class BhashaSTT {
 
     this.recognition.onstart = () => {
       this.isRecording = true;
-      if (this.onStateChange) this.onStateChange(true);
+      if (this.onStateChange) this.onStateChange(true, this.captureMode);
     };
 
     this.recognition.onend = () => {
-      // Auto-restart if still intended to record
       if (this.isRecording) {
         try {
           this.recognition.start();
         } catch (e) {
           this.isRecording = false;
-          if (this.onStateChange) this.onStateChange(false);
+          if (this.onStateChange) this.onStateChange(false, this.captureMode);
         }
       } else {
-        if (this.onStateChange) this.onStateChange(false);
+        if (this.onStateChange) this.onStateChange(false, this.captureMode);
       }
     };
 
@@ -74,8 +75,7 @@ class BhashaSTT {
 
     this.recognition.onerror = (event) => {
       console.warn('[STT] Recognition event error:', event.error);
-      if (event.error === 'no-speech') {
-        // Normal silence timeout, no alert needed
+      if (event.error === 'no-speech' || event.error === 'aborted') {
         return;
       }
       if (this.onError) {
@@ -85,6 +85,9 @@ class BhashaSTT {
   }
 
   getBcp47(langCode) {
+    if (window.LANGUAGE_CATALOG && window.LANGUAGE_CATALOG[langCode]) {
+      return window.LANGUAGE_CATALOG[langCode].bcp47;
+    }
     const map = {
       'auto': 'en-US',
       'en': 'en-US',
@@ -94,6 +97,7 @@ class BhashaSTT {
       'ru': 'ru-RU',
       'zh': 'zh-CN',
       'ja': 'ja-JP',
+      'ko': 'ko-KR',
       'ar': 'ar-SA',
       'bn': 'bn-IN',
       'ta': 'ta-IN',
@@ -101,7 +105,26 @@ class BhashaSTT {
       'mr': 'mr-IN',
       'gu': 'gu-IN',
       'pa': 'pa-IN',
+      'kn': 'kn-IN',
+      'ml': 'ml-IN',
+      'or': 'or-IN',
+      'as': 'as-IN',
       'ur': 'ur-PK',
+      'ne': 'ne-NP',
+      'pt': 'pt-BR',
+      'it': 'it-IT',
+      'nl': 'nl-NL',
+      'tr': 'tr-TR',
+      'fa': 'fa-IR',
+      'vi': 'vi-VN',
+      'th': 'th-TH',
+      'id': 'id-ID',
+      'ms': 'ms-MY',
+      'sw': 'sw-KE',
+      'pl': 'pl-PL',
+      'uk': 'uk-UA',
+      'el': 'el-GR',
+      'he': 'he-IL',
       'hi': 'hi-IN'
     };
     return map[langCode] || langCode || 'en-US';
@@ -111,14 +134,16 @@ class BhashaSTT {
     this.currentLanguage = langCode;
     if (this.recognition) {
       this.recognition.lang = this.getBcp47(langCode);
-      // If currently running, restart to apply new language
       if (this.isRecording) {
-        this.recognition.stop();
+        try {
+          this.recognition.stop();
+        } catch (e) {}
       }
     }
   }
 
-  async start() {
+  async start(mode = 'mic', externalStream = null) {
+    this.captureMode = mode;
     if (!this.recognition) {
       this.initRecognition();
       if (!this.recognition) {
@@ -127,20 +152,23 @@ class BhashaSTT {
     }
 
     try {
-      // Request mic stream with high quality constraints
-      if (!this.stream) {
+      if (externalStream) {
+        this.stream = externalStream;
+      } else if (!this.stream) {
+        // For 'ambient-media' mode (capturing device speaker / TV / tablet / mobile media audio),
+        // disable echoCancellation so the device doesn't filter out media playing on or near the device.
+        const isAmbientMedia = mode === 'ambient-media';
         this.stream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,
-            noiseSuppression: false, // Let our Web Audio clarity filter handle EQ and intelligibility
+            echoCancellation: !isAmbientMedia,
+            noiseSuppression: false,
             autoGainControl: true
           }
         });
+      }
 
-        // Feed to Audio Clarity Engine
-        if (window.bhashaAudio) {
-          await window.bhashaAudio.initAudio(this.stream);
-        }
+      if (window.bhashaAudio && this.stream && this.stream.getAudioTracks().length > 0) {
+        await window.bhashaAudio.initAudio(this.stream);
       }
 
       this.isRecording = true;
@@ -172,10 +200,9 @@ class BhashaSTT {
     }
 
     if (this.onStateChange) {
-      this.onStateChange(false);
+      this.onStateChange(false, this.captureMode);
     }
   }
 }
 
-// Global instance
 window.bhashaSTT = new BhashaSTT();

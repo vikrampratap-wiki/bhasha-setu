@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo 'Static build ready'"
+    "build": "echo 'Static build ready'",
+    "lint": "node --check server.js && node --check js/translator.js && node --check js/device-media.js && node --check js/app.js && node --check js/stt.js",
+    "test": "npx --yes tsx --test tests/translator.test.ts"
   },
   "repository": {
     "type": "git",

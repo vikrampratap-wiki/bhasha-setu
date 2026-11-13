@@ -1,7 +1,7 @@
 /**
  * BhashaSetu Service Worker - 100% Offline Capability
  */
-const CACHE_NAME = 'bhasha-setu-v1.0.0';
+const CACHE_NAME = 'bhasha-setu-v2.0.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   './css/style.css',
   './js/app.js',
   './js/stt.js',
+  './js/device-media.js',
   './js/audio-clarity.js',
   './js/translator.js',
   './js/tts.js',
@@ -45,7 +46,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
@@ -54,7 +54,6 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        // Cache external assets like fonts or icons dynamically if successful
         if (
           networkResponse &&
           networkResponse.status === 200 &&
@@ -67,7 +66,6 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // If offline and request is an HTML page, serve cached index.html
         if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
           return caches.match('./index.html');
         }
