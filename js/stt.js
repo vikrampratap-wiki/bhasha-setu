@@ -37,7 +37,12 @@ class BhashaSTT {
     this.initRecognition();
   }
 
+  isSupported() {
+    return !!(typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+  }
+
   initRecognition() {
+    if (typeof window === 'undefined') return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       return;
@@ -50,6 +55,11 @@ class BhashaSTT {
     this.recognition.lang = this.getBcp47(this.currentLanguage);
 
     this.recognition.onstart = () => {
+      // Prevent zombie state if user clicked stop before hardware initialized
+      if (!this.isRecording) {
+        try { this.recognition.abort(); } catch (_) {}
+        return;
+      }
       this.lastStartTimestamp = Date.now();
       this.gotResultInSession = false;
       this.isRecording = true;
@@ -146,16 +156,32 @@ class BhashaSTT {
 
     this.recognition.onerror = (event) => {
       if (event.error === 'no-speech') return;
-      if (
-        event.error === 'not-allowed' ||
-        event.error === 'service-not-allowed' ||
-        event.error === 'audio-capture'
-      ) {
+
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         this.rapidAbortCount += 3;
         this.isRecording = false;
         if (this.onStateChange) this.onStateChange(false, this.captureMode);
         if (this.onError) {
-          this.onError('माइक किसी अन्य ऐप/वीडियो में व्यस्त है — त्वरित वॉयस बार या लाइव मीडिया स्ट्रीम का उपयोग करें।');
+          this.onError('माइक्रोफ़ोन की अनुमति अस्वीकृत है। कृपया ब्राउज़र सेटिंग्स में जाकर माइक को अनुमति दें।');
+        }
+      } else if (event.error === 'audio-capture') {
+        this.rapidAbortCount += 3;
+        this.isRecording = false;
+        if (this.onStateChange) this.onStateChange(false, this.captureMode);
+        if (this.onError) {
+          this.onError('माइक्रोफ़ोन हार्डवेयर उपलब्ध नहीं है या किसी अन्य ऐप द्वारा व्यस्त है।');
+        }
+      } else if (event.error === 'network') {
+        if (this.restartTimer) {
+          clearTimeout(this.restartTimer);
+          this.restartTimer = null;
+        }
+        if (this.onError) {
+          this.onError('स्पीच रिकग्निशन नेटवर्क त्रुटि। कृपया इंटरनेट कनेक्शन जांचें अथवा त्वरित टेक्स्ट बॉक्स का उपयोग करें।');
+        }
+      } else {
+        if (this.onError) {
+          this.onError(`वाक् पहचान त्रुटि (${event.error})`);
         }
       }
     };
@@ -233,8 +259,22 @@ class BhashaSTT {
     this.rapidAbortCount = 0;
     this.pendingInterimText = '';
 
-    if (window.bhashaTTS) {
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
+
+    if (window.bhashaTTS && window.bhashaTTS.getAudioContext) {
       window.bhashaTTS.getAudioContext();
+    }
+
+    if (!this.isSupported()) {
+      this.isRecording = false;
+      if (this.onStateChange) this.onStateChange(false, this.captureMode);
+      if (this.onError) {
+        this.onError('आपके ब्राउज़र (जैसे Firefox) में स्पीच रिकग्निशन समर्थित नहीं है। कृपया त्वरित टेक्स्ट बॉक्स या Chrome/Edge/Safari का उपयोग करें।');
+      }
+      return false;
     }
 
     this.isRecording = true;
@@ -250,10 +290,30 @@ class BhashaSTT {
       try {
         this.recognition.lang = this.getBcp47(this.currentLanguage);
         this.recognition.start();
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[STT] recognition.start warning:', e.message);
+      }
     }
 
-    if (externalStream && window.bhashaAudio && externalStream.getAudioTracks().length > 0) {
+    // Connect real audio stream to Audio Clarity Engine & Pitch Diarizer
+    if (mode === 'mic' && !externalStream) {
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          this.stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: false, // Let our high-definition Web Audio clarity filter handle EQ
+              autoGainControl: true
+            }
+          });
+          if (window.bhashaAudio) {
+            await window.bhashaAudio.initAudio(this.stream);
+          }
+        } catch (micErr) {
+          console.warn('[STT] Could not capture mic for audio visualizer/EQ:', micErr.message);
+        }
+      }
+    } else if (externalStream && window.bhashaAudio && externalStream.getAudioTracks().length > 0) {
       this.stream = externalStream;
       await window.bhashaAudio.initAudio(externalStream);
     }
@@ -280,12 +340,23 @@ class BhashaSTT {
     }
 
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      try {
+        this.stream.getTracks().forEach(track => track.stop());
+      } catch (_) {}
       this.stream = null;
     }
 
     if (window.bhashaAudio) {
       window.bhashaAudio.isListening = false;
+      if (typeof window.bhashaAudio.stopAudio === 'function') {
+        window.bhashaAudio.stopAudio();
+      }
+    }
+
+    if (this.captureMode === 'system-tab' && window.bhashaDeviceMedia) {
+      try {
+        window.bhashaDeviceMedia.stopSystemScreenCapture();
+      } catch (_) {}
     }
 
     if (this.onStateChange) {
@@ -294,4 +365,9 @@ class BhashaSTT {
   }
 }
 
-window.bhashaSTT = new BhashaSTT();
+if (typeof window !== 'undefined') {
+  window.bhashaSTT = new BhashaSTT();
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BhashaSTT };
+}

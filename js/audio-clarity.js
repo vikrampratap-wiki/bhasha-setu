@@ -15,6 +15,7 @@ class BhashaAudioEngine {
     this.highpassFilter = null;
     this.clarityFilter = null;
     this.lowpassFilter = null;
+    this.compressor = null;
     this.analyser = null;
     this.isClarityEnabled = true;
     this.isListening = false;
@@ -47,42 +48,63 @@ class BhashaAudioEngine {
     this.onSpeakerDetected = null;
   }
 
+  getAudioContext() {
+    if (typeof window === 'undefined') return null;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!this.audioCtx) {
+      this.audioCtx = new AudioContextClass();
+    }
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
+    }
+    return this.audioCtx;
+  }
+
   async initAudio(stream) {
     try {
       if (!stream || stream.getAudioTracks().length === 0) {
         this.isListening = true;
         return false;
       }
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!this.audioCtx) {
-        this.audioCtx = new AudioContext();
-      }
-      if (this.audioCtx.state === 'suspended') {
-        await this.audioCtx.resume();
-      }
+      this.audioCtx = this.getAudioContext();
+      if (!this.audioCtx) return false;
 
       this.mediaStream = stream;
-      if (this.sourceNode) {
-        try { this.sourceNode.disconnect(); } catch (_) {}
-      }
+
+      // Disconnect and clean previous nodes
+      this.cleanupNodes();
+
       this.sourceNode = this.audioCtx.createMediaStreamSource(stream);
 
+      // 1. Highpass filter to eliminate sub-bass rumble (< 120 Hz)
       this.highpassFilter = this.audioCtx.createBiquadFilter();
       this.highpassFilter.type = 'highpass';
       this.highpassFilter.frequency.setValueAtTime(120, this.audioCtx.currentTime);
       this.highpassFilter.Q.setValueAtTime(0.7, this.audioCtx.currentTime);
 
+      // 2. Clarity Peaking Equalizer to boost speech intelligibility (around 2400 Hz)
       this.clarityFilter = this.audioCtx.createBiquadFilter();
       this.clarityFilter.type = 'peaking';
       this.clarityFilter.frequency.setValueAtTime(2400, this.audioCtx.currentTime);
       this.clarityFilter.Q.setValueAtTime(1.1, this.audioCtx.currentTime);
       this.clarityFilter.gain.setValueAtTime(4.5, this.audioCtx.currentTime);
 
+      // 3. Lowpass filter to cut high-frequency background hiss (> 7500 Hz)
       this.lowpassFilter = this.audioCtx.createBiquadFilter();
       this.lowpassFilter.type = 'lowpass';
       this.lowpassFilter.frequency.setValueAtTime(7500, this.audioCtx.currentTime);
       this.lowpassFilter.Q.setValueAtTime(0.7, this.audioCtx.currentTime);
 
+      // 4. Dynamics Compressor Node to prevent digital clipping on mobile/tablet microphones
+      this.compressor = this.audioCtx.createDynamicsCompressor();
+      this.compressor.threshold.setValueAtTime(-14, this.audioCtx.currentTime);
+      this.compressor.knee.setValueAtTime(10, this.audioCtx.currentTime);
+      this.compressor.ratio.setValueAtTime(4, this.audioCtx.currentTime);
+      this.compressor.attack.setValueAtTime(0.005, this.audioCtx.currentTime);
+      this.compressor.release.setValueAtTime(0.05, this.audioCtx.currentTime);
+
+      // 5. Analyser
       this.analyser = this.audioCtx.createAnalyser();
       this.analyser.fftSize = this.bufferSize;
       this.analyser.smoothingTimeConstant = 0.8;
@@ -91,36 +113,81 @@ class BhashaAudioEngine {
         this.sourceNode.connect(this.highpassFilter);
         this.highpassFilter.connect(this.clarityFilter);
         this.clarityFilter.connect(this.lowpassFilter);
-        this.lowpassFilter.connect(this.analyser);
+        this.lowpassFilter.connect(this.compressor);
+        this.compressor.connect(this.analyser);
       } else {
-        this.sourceNode.connect(this.analyser);
+        this.sourceNode.connect(this.compressor);
+        this.compressor.connect(this.analyser);
       }
 
       this.isListening = true;
       return true;
     } catch (err) {
+      console.warn('[AudioEngine] initAudio warning:', err.message);
       this.isListening = true;
       return false;
     }
   }
 
+  cleanupNodes() {
+    if (this.sourceNode) {
+      try { this.sourceNode.disconnect(); } catch (_) {}
+      this.sourceNode = null;
+    }
+    if (this.highpassFilter) {
+      try { this.highpassFilter.disconnect(); } catch (_) {}
+      this.highpassFilter = null;
+    }
+    if (this.clarityFilter) {
+      try { this.clarityFilter.disconnect(); } catch (_) {}
+      this.clarityFilter = null;
+    }
+    if (this.lowpassFilter) {
+      try { this.lowpassFilter.disconnect(); } catch (_) {}
+      this.lowpassFilter = null;
+    }
+    if (this.compressor) {
+      try { this.compressor.disconnect(); } catch (_) {}
+      this.compressor = null;
+    }
+    if (this.analyser) {
+      try { this.analyser.disconnect(); } catch (_) {}
+      this.analyser = null;
+    }
+  }
+
+  stopAudio() {
+    this.isListening = false;
+    this.cleanupNodes();
+    if (this.mediaStream) {
+      try {
+        this.mediaStream.getTracks().forEach(t => t.stop());
+      } catch (_) {}
+      this.mediaStream = null;
+    }
+    this.stopVisualizer();
+  }
+
   toggleClarityFilter(enable) {
     this.isClarityEnabled = enable !== undefined ? enable : !this.isClarityEnabled;
-    if (!this.sourceNode || !this.analyser) return this.isClarityEnabled;
+    if (!this.sourceNode || !this.analyser || !this.compressor) return this.isClarityEnabled;
 
     try {
       this.sourceNode.disconnect();
       if (this.highpassFilter) this.highpassFilter.disconnect();
       if (this.clarityFilter) this.clarityFilter.disconnect();
       if (this.lowpassFilter) this.lowpassFilter.disconnect();
+      if (this.compressor) this.compressor.disconnect();
 
       if (this.isClarityEnabled) {
         this.sourceNode.connect(this.highpassFilter);
         this.highpassFilter.connect(this.clarityFilter);
         this.clarityFilter.connect(this.lowpassFilter);
-        this.lowpassFilter.connect(this.analyser);
+        this.lowpassFilter.connect(this.compressor);
+        this.compressor.connect(this.analyser);
       } else {
-        this.sourceNode.connect(this.analyser);
+        this.sourceNode.connect(this.compressor);
+        this.compressor.connect(this.analyser);
       }
     } catch (e) {}
     return this.isClarityEnabled;
@@ -139,7 +206,16 @@ class BhashaAudioEngine {
     }
     this.lastPitchCheckMs = now;
 
-    this.analyser.getFloatTimeDomainData(this.audioBuffer);
+    // Safe time-domain buffer extraction with WebKit fallback
+    if (this.analyser.getFloatTimeDomainData) {
+      this.analyser.getFloatTimeDomainData(this.audioBuffer);
+    } else if (this.analyser.getByteTimeDomainData) {
+      const byteBuf = new Uint8Array(this.bufferSize);
+      this.analyser.getByteTimeDomainData(byteBuf);
+      for (let i = 0; i < this.bufferSize; i++) {
+        this.audioBuffer[i] = (byteBuf[i] - 128) / 128.0;
+      }
+    }
 
     let rms = 0;
     for (let i = 0; i < this.bufferSize; i += 2) {
@@ -152,26 +228,29 @@ class BhashaAudioEngine {
       return 0;
     }
 
-    const sampleRate = this.audioCtx.sampleRate;
+    const sampleRate = (this.audioCtx && this.audioCtx.sampleRate) || 44100;
     const minPeriod = Math.floor(sampleRate / 380);
     const maxPeriod = Math.min(this.bufferSize - 16, Math.floor(sampleRate / 72));
 
     let bestR = 0;
     let bestOffset = -1;
 
-    // Strided autocorrelation (step by 2 on offset, step by 2 on inner sum) -> 16x faster!
+    // Normalized strided autocorrelation (unbiased across male 75-130Hz and female 180-280Hz)
     for (let offset = minPeriod; offset <= maxPeriod; offset += 2) {
       let r = 0;
+      let count = 0;
       for (let i = 0; i < this.bufferSize - offset; i += 2) {
         r += this.audioBuffer[i] * this.audioBuffer[i + offset];
+        count++;
       }
-      if (r > bestR) {
-        bestR = r;
+      const normalizedR = count > 0 ? (r / count) : 0;
+      if (normalizedR > bestR) {
+        bestR = normalizedR;
         bestOffset = offset;
       }
     }
 
-    if (bestOffset > 0 && bestR > 0.03) {
+    if (bestOffset > 0 && bestR > 0.005) {
       const freq = Math.round(sampleRate / bestOffset);
       if (freq >= 70 && freq <= 380) {
         this.lastDetectedPitch = freq;
@@ -350,4 +429,9 @@ class BhashaAudioEngine {
   }
 }
 
-window.bhashaAudio = new BhashaAudioEngine();
+if (typeof window !== 'undefined') {
+  window.bhashaAudio = new BhashaAudioEngine();
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BhashaAudioEngine };
+}

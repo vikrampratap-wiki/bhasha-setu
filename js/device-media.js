@@ -131,14 +131,18 @@ class BhashaDeviceMedia {
     try {
       this.stopAllMediaModes(null, false);
 
-      this.displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
-      });
+      // Cross-browser flexible audio constraints (prevents OverconstrainedError on Safari / tablets)
+      try {
+        this.displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+      } catch (displayErr) {
+        // Fallback to video-only if system internal audio is unsupported on platform (e.g. mobile/WebKit)
+        this.displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true
+        });
+      }
 
       this.isCapturingDisplay = true;
 
@@ -533,12 +537,25 @@ class BhashaDeviceMedia {
     this.drawBroadcastFrame(this.pipCanvas, this.lastSubtitleData);
   }
 
+  cleanupPiPStreams() {
+    this.isPiPActive = false;
+    if (this.pipVideo) {
+      try { this.pipVideo.pause(); } catch (_) {}
+      if (this.pipVideo.srcObject) {
+        try {
+          this.pipVideo.srcObject.getTracks().forEach(t => t.stop());
+        } catch (_) {}
+        this.pipVideo.srcObject = null;
+      }
+    }
+  }
+
   async togglePiPSubtitles() {
     this.initPiPElements();
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
-        this.isPiPActive = false;
+        this.cleanupPiPStreams();
         return false;
       }
 
@@ -551,18 +568,24 @@ class BhashaDeviceMedia {
         await this.pipVideo.requestPictureInPicture();
         this.isPiPActive = true;
         this.pipVideo.addEventListener('leavepictureinpicture', () => {
-          this.isPiPActive = false;
+          this.cleanupPiPStreams();
         }, { once: true });
         return true;
       } else {
         throw new Error('Picture-in-Picture समर्थित नहीं है');
       }
     } catch (err) {
+      this.cleanupPiPStreams();
       console.warn('[DeviceMedia] PiP fallback:', err.message);
       throw err;
     }
   }
 }
 
-window.LIVE_MEDIA_CHANNELS = LIVE_MEDIA_CHANNELS;
-window.bhashaDeviceMedia = new BhashaDeviceMedia();
+if (typeof window !== 'undefined') {
+  window.LIVE_MEDIA_CHANNELS = LIVE_MEDIA_CHANNELS;
+  window.bhashaDeviceMedia = new BhashaDeviceMedia();
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BhashaDeviceMedia, LIVE_MEDIA_CHANNELS };
+}

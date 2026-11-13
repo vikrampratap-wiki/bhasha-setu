@@ -36,7 +36,14 @@ class BhashaTTS {
   }
 
   getAudioContext() {
-    if (!this.audioCtx) {
+    if (typeof window !== 'undefined' && window.bhashaAudio && typeof window.bhashaAudio.getAudioContext === 'function') {
+      const sharedCtx = window.bhashaAudio.getAudioContext();
+      if (sharedCtx) {
+        this.audioCtx = sharedCtx;
+        return sharedCtx;
+      }
+    }
+    if (!this.audioCtx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         this.audioCtx = new AudioCtx();
@@ -140,6 +147,10 @@ class BhashaTTS {
   }
 
   stopActiveAudioOnly() {
+    if (typeof this.activeCleanupNodes === 'function') {
+      try { this.activeCleanupNodes(); } catch (_) {}
+      this.activeCleanupNodes = null;
+    }
     if (this.activeSourceNode) {
       try {
         this.activeSourceNode.onended = null;
@@ -178,22 +189,29 @@ class BhashaTTS {
 
     let played = false;
 
-    // 1. Pure Un-Warped Neural Audio via Web Audio API (/api/tts)
-    if (navigator.onLine) {
-      played = await this.playPureHumanNeuralAudio(text.trim(), lang, speaker, naturalRate, token);
-    }
+    try {
+      const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        (typeof window !== 'undefined' && window.bhashaTranslator && window.bhashaTranslator.forceOffline);
 
-    // 2. Fallback to Natural Browser Voice (only if token is still current and neural wasn't played)
-    if (!played && token === this.currentSpeakToken && this.synth) {
-      await this.playNaturalBrowserVoice(text.trim(), lang, isMale, naturalRate, token);
-    }
+      // 1. Pure Un-Warped Neural Audio via Web Audio API (/api/tts) only if online
+      if (!isOffline && typeof fetch !== 'undefined') {
+        played = await this.playPureHumanNeuralAudio(text.trim(), lang, speaker, naturalRate, token);
+      }
 
-    if (token === this.currentSpeakToken) {
-      this.isPlaying = false;
-      this.setVoiceIsolationState(false);
-      this.updateSpeakerBadge(false);
-      if (typeof onEndCallback === 'function') {
-        try { onEndCallback(); } catch (_) {}
+      // 2. Fallback to Natural Browser Voice (only if token is still current and neural wasn't played)
+      if (!played && token === this.currentSpeakToken && this.synth) {
+        await this.playNaturalBrowserVoice(text.trim(), lang, isMale, naturalRate, token);
+      }
+    } catch (err) {
+      console.warn('[TTS] speak warning:', err.message);
+    } finally {
+      if (token === this.currentSpeakToken) {
+        this.isPlaying = false;
+        this.setVoiceIsolationState(false);
+        this.updateSpeakerBadge(false);
+        if (typeof onEndCallback === 'function') {
+          try { onEndCallback(); } catch (_) {}
+        }
       }
     }
   }
@@ -267,15 +285,28 @@ class BhashaTTS {
 
         this.activeSourceNode = source;
 
+        const cleanupNodes = () => {
+          if (this.activeCleanupNodes === cleanupNodes) {
+            this.activeCleanupNodes = null;
+          }
+          try { source.disconnect(); } catch (_) {}
+          try { warmthFilter.disconnect(); } catch (_) {}
+          try { presenceFilter.disconnect(); } catch (_) {}
+          try { gainNode.disconnect(); } catch (_) {}
+        };
+        this.activeCleanupNodes = cleanupNodes;
+
         const maxDurationMs = Math.ceil((audioBuffer.duration / naturalRate) * 1000) + 600;
         const safetyTimer = setTimeout(() => {
           if (this.activeSourceNode === source) this.activeSourceNode = null;
+          cleanupNodes();
           resolve(true);
         }, maxDurationMs);
 
         source.onended = () => {
           clearTimeout(safetyTimer);
           if (this.activeSourceNode === source) this.activeSourceNode = null;
+          cleanupNodes();
           resolve(true);
         };
 
@@ -336,4 +367,9 @@ class BhashaTTS {
   }
 }
 
-window.bhashaTTS = new BhashaTTS();
+if (typeof window !== 'undefined') {
+  window.bhashaTTS = new BhashaTTS();
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BhashaTTS };
+}

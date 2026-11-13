@@ -501,9 +501,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.bhashaSTT.stop();
       showToast('माइक सुनना रोका गया');
     } else {
+      if (!window.bhashaSTT.isSupported()) {
+        showToast('⚠️ आपके ब्राउज़र (जैसे Firefox) में स्पीच रिकग्निशन उपलब्ध नहीं है। कृपया त्वरित टेक्स्ट बॉक्स या Chrome/Edge/Safari का उपयोग करें।', 'error');
+        const textTabBtn = document.querySelector('[data-tab="text"]');
+        if (textTabBtn) textTabBtn.click();
+        return;
+      }
       try {
-        await window.bhashaSTT.start('mic');
-        showToast(`🎙️ ${window.bhashaAudio.getCurrentSpeaker().name} के लिए माइक चालू — अब बोलें`);
+        const ok = await window.bhashaSTT.start('mic');
+        if (ok) {
+          showToast(`🎙️ ${window.bhashaAudio.getCurrentSpeaker().name} के लिए माइक चालू — अब बोलें`);
+        }
       } catch (err) {
         showToast(`माइक्रोफ़ोन सूचना: ${err.message}`, 'error');
       }
@@ -914,6 +922,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       customMeaningInput.value = '';
       await renderCustomWords();
       showToast(`शब्द "${src}" का हिन्दी अर्थ "${hnd}" ऑफ़लाइन डिक्शनरी में सहेज लिया गया है!`);
+    });
+  }
+
+  // =========================================================================
+  // Mobile / Tablet & Browser Lifecycle Listeners (Visibility, Pagehide, Devices)
+  // =========================================================================
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      if (window.bhashaAudio) window.bhashaAudio.stopVisualizer();
+    } else if (document.visibilityState === 'visible') {
+      if (window.bhashaSTT && window.bhashaSTT.isRecording) {
+        if (window.bhashaAudio) window.bhashaAudio.startVisualizer(visualizerCanvas, pitchDisplay);
+      }
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (window.bhashaSTT) window.bhashaSTT.stop();
+    if (window.bhashaDeviceMedia) window.bhashaDeviceMedia.stopAllMediaModes(null, false);
+    if (window.bhashaAudio) window.bhashaAudio.stopAudio();
+    if (window.bhashaTTS) window.bhashaTTS.stop();
+  });
+
+  if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => {
+      console.log('[App] Audio device change detected');
+      showToast('ऑडियो उपकरण परिवर्तन संज्ञान में लिया गया', 'info');
     });
   }
 });

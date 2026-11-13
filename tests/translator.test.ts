@@ -86,3 +86,30 @@ test('tts.js enforces Single-Voice Isolation and zero robotic detune warping', (
   assert.ok(!ttsCode.includes('source.detune.value ='), 'Should not apply robotic detune warping to Web Audio source');
 });
 
+test('stt.js provides isSupported() check and zombie onstart guard', () => {
+  const sttCode = fs.readFileSync('js/stt.js', 'utf8');
+  assert.ok(sttCode.includes('isSupported()'), 'Expected isSupported() method for cross-browser detection');
+  assert.ok(sttCode.includes('if (!this.isRecording)'), 'Expected check in onstart preventing zombie recording state');
+  assert.ok(sttCode.includes('this.restartTimer = null'), 'Expected restartTimer nullification preventing collision');
+});
+
+test('audio-clarity.js incorporates dynamics compression and stopAudio lifecycle cleanup', () => {
+  const audioCode = fs.readFileSync('js/audio-clarity.js', 'utf8');
+  assert.ok(audioCode.includes('createDynamicsCompressor'), 'Expected compressor node preventing digital clipping');
+  assert.ok(audioCode.includes('stopAudio()'), 'Expected stopAudio cleanup method');
+  assert.ok(audioCode.includes('cleanupNodes()'), 'Expected cleanupNodes releasing audio nodes');
+});
+
+test('tts.js wraps voice isolation in try-finally preventing permanent mic lock', () => {
+  const ttsCode = fs.readFileSync('js/tts.js', 'utf8');
+  assert.ok(ttsCode.includes('finally {'), 'Expected try-finally block in speak()');
+  assert.ok(ttsCode.includes('this.setVoiceIsolationState(false)'), 'Expected voice isolation release in finally block');
+  assert.ok(ttsCode.includes('this.activeCleanupNodes'), 'Expected active audio nodes cleanup on stop or ended');
+});
+
+test('device-media.js cleans up PiP video tracks and handles flexible audio constraints', () => {
+  const mediaCode = fs.readFileSync('js/device-media.js', 'utf8');
+  assert.ok(mediaCode.includes('cleanupPiPStreams'), 'Expected PiP stream cleanup method');
+  assert.ok(mediaCode.includes('getDisplayMedia({'), 'Expected cross-browser flexible display media constraints');
+});
+
