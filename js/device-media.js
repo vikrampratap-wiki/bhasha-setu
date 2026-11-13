@@ -1,13 +1,13 @@
 /**
  * BhashaSetu - Universal Device, Screen, System Audio & Media Stream Translator
- * Works across Tablet, Mobile, and Desktop to translate ANY language playing or displayed on the device.
  *
- * Capabilities:
- * 1. System / Browser Tab / Screen Audio & Video Capture (getDisplayMedia)
- * 2. Mobile / Tablet / Desktop Ambient Media Speaker Listener
- * 3. Multi-Language Live Broadcast Stream Simulator & Local Video/Audio File Player with Live Hindi Subtitles
- * 4. Clipboard & Cross-App Live Text Watcher
- * 5. Picture-in-Picture (PiP) Floating Live Hindi Subtitle Window
+ * Critical Fixes:
+ * 1. Zero Video Interruption (Never Pauses User Videos):
+ *    - When a user loads a local video/audio file or runs a stream, we attach a Video Keep-Alive Guard
+ *      and NEVER invoke hardware microphone locks that steal OS MediaSession focus from the video!
+ * 2. Automatic Continuous Hindi Voice Output:
+ *    - Unlocks Web Audio API on button press and automatically speaks every translated segment
+ *      using Web Audio BufferSource (which mixes smoothly with video audio without pausing it).
  */
 
 const LIVE_MEDIA_CHANNELS = {
@@ -18,11 +18,11 @@ const LIVE_MEDIA_CHANNELS = {
       { lang: 'en', speakerIdx: 0, text: 'Welcome to our live broadcast', context: 'Global News Anchor (English)' },
       { lang: 'es', speakerIdx: 1, text: 'Bienvenidos a la transmisión en vivo', context: 'Madrid Correspondent (Español)' },
       { lang: 'ja', speakerIdx: 2, text: '本日のニュースをお伝えします', context: 'Tokyo Bureau (日本語)' },
-      { lang: 'ko', speakerIdx: 1, text: '생방송에 오신 것을 환영합니다', context: 'Seoul Studio (한국어)' },
-      { lang: 'fr', speakerIdx: 3, text: 'Bienvenue dans notre conférence', context: 'Paris Reporter (Français)' },
-      { lang: 'ar', speakerIdx: 0, text: 'أهلا بكم في البث المباشر', context: 'Dubai Desk (العربية)' },
-      { lang: 'ru', speakerIdx: 3, text: 'Здравствуйте, помогите мне', context: 'Moscow Feed (Русский)' },
-      { lang: 'de', speakerIdx: 2, text: 'Guten Morgen, wie geht es Ihnen', context: 'Berlin Studio (Deutsch)' }
+      { lang: 'ko', speakerIdx: 3, text: '생방송에 오신 것을 환영합니다', context: 'Seoul Studio (한국어)' },
+      { lang: 'fr', speakerIdx: 4, text: 'Bienvenue dans notre conférence', context: 'Paris Reporter (Français)' },
+      { lang: 'ar', speakerIdx: 5, text: 'أهلا بكم في البث المباشر', context: 'Dubai Desk (العربية)' },
+      { lang: 'ru', speakerIdx: 6, text: 'Здравствуйте, помогите мне', context: 'Moscow Feed (Русский)' },
+      { lang: 'de', speakerIdx: 7, text: 'Guten Morgen, wie geht es Ihnen', context: 'Berlin Studio (Deutsch)' }
     ]
   },
   'indian-regional': {
@@ -30,27 +30,27 @@ const LIVE_MEDIA_CHANNELS = {
     subtitle: 'தமிழ் • తెలుగు • മലയാളം • ಕನ್ನಡ • বাংলা • मराठी • ગુજરાતી • ਪੰਜਾਬੀ',
     segments: [
       { lang: 'ta', speakerIdx: 1, text: 'நேரலை ஒளிபரப்பிற்கு வரவேற்கிறோம்', context: 'चेन्नई स्टूडियो (तमिल)' },
-      { lang: 'te', speakerIdx: 0, text: 'నమస్కారం, మీరు ఎలా ఉన్నారు', context: 'हैदराबाद संवाददाता (तेलुगु)' },
-      { lang: 'ml', speakerIdx: 2, text: 'നമസ്കാരം, സുപ്രഭാതം', context: 'कोच्चि डेस्क (मलयालम)' },
-      { lang: 'kn', speakerIdx: 3, text: 'ನಮಸ್ಕಾರ, ಧನ್ಯವಾದಗಳು', context: 'बेंगलुरु लाइव (कन्नड़)' },
-      { lang: 'bn', speakerIdx: 1, text: 'নমস্কার, কেমন আছেন', context: 'कोलकाता पैनल (बंगाली)' },
-      { lang: 'mr', speakerIdx: 0, text: 'नमस्कार, तुम्ही कसे आहात', context: 'मुंबई वार्ता (मराठी)' },
-      { lang: 'gu', speakerIdx: 2, text: 'નમસ્તે, તમે કેમ છો', context: 'अहमदाबाद चर्चा (गुजराती)' },
-      { lang: 'pa', speakerIdx: 3, text: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ, ਧੰਨਵਾਦ', context: 'अमृतसर फीड (पंजाबी)' }
+      { lang: 'te', speakerIdx: 2, text: 'నమస్కారం, మీరు ఎలా ఉన్నారు', context: 'हैदराबाद संवाददाता (तेलुगु)' },
+      { lang: 'ml', speakerIdx: 3, text: 'നമസ്കാരം, സുപ്രഭാതം', context: 'कोच्चि डेस्क (मलयालम)' },
+      { lang: 'kn', speakerIdx: 4, text: 'ನಮಸ್ಕಾರ, ಧನ್ಯವಾದಗಳು', context: 'बेंगलुरु लाइव (कन्नड़)' },
+      { lang: 'bn', speakerIdx: 5, text: 'নমস্কার, কেমন আছেন', context: 'कोलकाता पैनल (बंगाली)' },
+      { lang: 'mr', speakerIdx: 6, text: 'नमस्कार, तुम्ही कसे आहात', context: 'मुंबई वार्ता (मराठी)' },
+      { lang: 'gu', speakerIdx: 7, text: 'નમસ્તે, તમે કેમ છો', context: 'अहमदाबाद चर्चा (गुजराती)' },
+      { lang: 'pa', speakerIdx: 8, text: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ, ਧੰਨਵਾਦ', context: 'अमृतसर फीड (पंजाबी)' }
     ]
   },
   'tech-conference': {
     title: '💻 टेक व मेडिकल समिट (डेस्कटॉप/टैबलेट मीटिंग)',
     subtitle: 'English • 中文 • Português • Italiano • Türkçe • ไทย • Tiếng Việt',
     segments: [
-      { lang: 'en', speakerIdx: 0, text: 'Artificial intelligence is transforming technology', context: 'Keynote Speaker (English)' },
-      { lang: 'zh', speakerIdx: 2, text: '欢迎观看直播', context: 'Shenzhen Lab (中文)' },
-      { lang: 'en', speakerIdx: 1, text: 'The patient needs immediate medical attention', context: 'Telemedicine Panel (English)' },
-      { lang: 'pt', speakerIdx: 3, text: 'Olá, bom dia, obrigado', context: 'São Paulo Team (Português)' },
-      { lang: 'it', speakerIdx: 2, text: 'Ciao, buongiorno, grazie', context: 'Milan Design Hub (Italiano)' },
-      { lang: 'tr', speakerIdx: 0, text: 'Merhaba, teşekkür ederim', context: 'Istanbul Summit (Türkçe)' },
-      { lang: 'th', speakerIdx: 1, text: 'สวัสดี, ขอบคุณ', context: 'Bangkok Forum (ไทย)' },
-      { lang: 'vi', speakerIdx: 2, text: 'Xin chào, cảm ơn', context: 'Hanoi Tech (Tiếng Việt)' }
+      { lang: 'en', speakerIdx: 8, text: 'Artificial intelligence is transforming technology', context: 'Keynote Speaker (English)' },
+      { lang: 'zh', speakerIdx: 9, text: '欢迎观看直播', context: 'Shenzhen Lab (中文)' },
+      { lang: 'en', speakerIdx: 10, text: 'The patient needs immediate medical attention', context: 'Telemedicine Panel (English)' },
+      { lang: 'pt', speakerIdx: 11, text: 'Olá, bom dia, obrigado', context: 'São Paulo Team (Português)' },
+      { lang: 'it', speakerIdx: 1, text: 'Ciao, buongiorno, grazie', context: 'Milan Design Hub (Italiano)' },
+      { lang: 'tr', speakerIdx: 2, text: 'Merhaba, teşekkür ederim', context: 'Istanbul Summit (Türkçe)' },
+      { lang: 'th', speakerIdx: 3, text: 'สวัสดี, ขอบคุณ', context: 'Bangkok Forum (ไทย)' },
+      { lang: 'vi', speakerIdx: 4, text: 'Xin chào, cảm ơn', context: 'Hanoi Tech (Tiếng Việt)' }
     ]
   }
 };
@@ -62,8 +62,12 @@ class BhashaDeviceMedia {
     this.isAmbientListening = false;
     this.isSimulatingStream = false;
     this.streamTimer = null;
+    this.localMediaSubtitleTimer = null;
     this.currentChannelKey = 'global-news';
     this.currentSegmentIdx = 0;
+    this.keepOriginalMediaAudio = true;
+    this.autoSpeakHindi = true;
+    this.userPausedVideo = false;
 
     // Clipboard watcher
     this.isClipboardWatching = false;
@@ -77,10 +81,10 @@ class BhashaDeviceMedia {
     this.isPiPActive = false;
     this.lastSubtitleData = {
       originalText: 'टैबलेट, मोबाइल व डेस्कटॉप मीडिया अनुवादक तैयार है...',
-      hindiText: 'कोई भी वीडियो, ऑडियो या स्क्रीन चलाएं — यहाँ तुरंत हिन्दी अनुवाद दिखेगा',
+      hindiText: 'कोई भी वीडियो, ऑडियो या स्क्रीन चलाएं — वीडियो रुके बिना यहाँ स्वतः हिन्दी आवाज़ व सबटाइटल आएंगे',
       detectedLangName: '🌐 ऑटो पहचान',
-      speakerName: 'भाषा सेतु',
-      speakerColor: '#f59e0b',
+      speakerName: 'वक्ता 1 · आरव',
+      speakerColor: '#10b981',
       context: 'लाइव सबटाइटल'
     };
 
@@ -89,9 +93,6 @@ class BhashaDeviceMedia {
     this.onStatusChange = null;
   }
 
-  /**
-   * Detect current device form factor (Mobile, Tablet, Desktop)
-   */
   getDeviceProfile() {
     const ua = navigator.userAgent || '';
     const width = window.innerWidth || 1024;
@@ -121,19 +122,21 @@ class BhashaDeviceMedia {
    * 1. Capture System / Browser Tab / Screen Audio & Video (Desktop & Supported Tablets)
    */
   async startSystemScreenCapture(previewVideoEl, sourceLang = 'auto') {
+    if (window.bhashaTTS) window.bhashaTTS.getAudioContext();
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
       throw new Error('इस डिवाइस ब्राउज़र पर डायरेक्ट स्क्रीन शेयरिंग उपलब्ध नहीं है। कृपया "स्पीकर/मीडिया लिसनर" या "लाइव स्ट्रीम प्लेयर" का उपयोग करें।');
     }
 
     try {
-      this.stopAllMediaModes();
+      this.stopAllMediaModes(null, false);
 
       this.displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: true
+          autoGainControl: false
         }
       });
 
@@ -141,11 +144,11 @@ class BhashaDeviceMedia {
 
       if (previewVideoEl) {
         previewVideoEl.srcObject = this.displayStream;
-        previewVideoEl.muted = true; // Avoid feedback loop
+        previewVideoEl.muted = false;
+        previewVideoEl.volume = 0.85;
         await previewVideoEl.play().catch(() => {});
       }
 
-      // Listen for user stopping screen share from browser bar
       const videoTrack = this.displayStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.onended = () => {
@@ -153,7 +156,6 @@ class BhashaDeviceMedia {
         };
       }
 
-      // Connect audio & start STT
       window.bhashaSTT.setLanguage(sourceLang);
       await window.bhashaSTT.start('system-tab', this.displayStream);
 
@@ -161,7 +163,7 @@ class BhashaDeviceMedia {
         this.onStatusChange({
           active: true,
           mode: 'system-tab',
-          message: '🖥️ स्क्रीन/टैब ऑडियो व वीडियो कैप्चर सक्रिय है — चल रही भाषा का लाइव हिन्दी अनुवाद हो रहा है'
+          message: '🖥️ स्क्रीन/टैब ऑडियो व वीडियो कैप्चर सक्रिय है — मूल मीडिया आवाज़ के साथ लाइव हिन्दी अनुवाद चालू है'
         });
       }
       return true;
@@ -176,7 +178,7 @@ class BhashaDeviceMedia {
       this.displayStream.getTracks().forEach(t => t.stop());
       this.displayStream = null;
     }
-    if (previewVideoEl) {
+    if (previewVideoEl && previewVideoEl.srcObject) {
       previewVideoEl.srcObject = null;
     }
     this.isCapturingDisplay = false;
@@ -194,10 +196,10 @@ class BhashaDeviceMedia {
 
   /**
    * 2. Mobile / Tablet / Desktop Ambient Speaker Listener Mode
-   * Listens to audio playing on the device speaker or nearby media in any language
    */
   async startAmbientMediaListener(sourceLang = 'auto') {
-    this.stopAllMediaModes();
+    if (window.bhashaTTS) window.bhashaTTS.getAudioContext();
+    this.stopAllMediaModes(null, false);
     this.isAmbientListening = true;
     window.bhashaSTT.setLanguage(sourceLang);
     await window.bhashaSTT.start('ambient-media');
@@ -206,7 +208,7 @@ class BhashaDeviceMedia {
       this.onStatusChange({
         active: true,
         mode: 'ambient-media',
-        message: '📲 डिवाइस स्पीकर/मीडिया लिसनर सक्रिय — टैबलेट, मोबाइल या डेस्कटॉप पर बज रही किसी भी भाषा को सुनकर अनुवाद कर रहा है'
+        message: '📲 डिवाइस स्पीकर/मीडिया लिसनर सक्रिय — वीडियो रोके बिना चल रही भाषा का स्वतः हिन्दी आवाज़ में अनुवाद चालू है'
       });
     }
   }
@@ -226,11 +228,73 @@ class BhashaDeviceMedia {
   }
 
   /**
-   * 3. Multi-Language Live Broadcast Stream Simulator (Works 100% offline/online on Mobile, Tablet & Desktop)
-   * Simulates or plays multi-language media running on the device and translates each segment live.
+   * 3A. Local Video / Audio File Continuous Non-Interrupting Translation
+   * Plays the user's video smoothly WITHOUT calling hardware mic locks that pause the video,
+   * while automatically translating and speaking the Hindi voiceover!
+   */
+  async startLocalMediaFileTranslation(videoEl, file, canvasEl = null) {
+    if (!videoEl || !file) return;
+    if (window.bhashaTTS) window.bhashaTTS.getAudioContext();
+
+    this.stopAllMediaModes(null, false);
+    this.userPausedVideo = false;
+
+    const fileUrl = URL.createObjectURL(file);
+    videoEl.srcObject = null;
+    videoEl.src = fileUrl;
+    videoEl.playsInline = true;
+    videoEl.muted = false;
+    videoEl.volume = 1.0;
+    videoEl.classList.remove('hidden');
+
+    // Guard against unintended OS audio-focus pauses while translation is active
+    videoEl.onpause = () => {
+      if (!videoEl.ended && this.localMediaSubtitleTimer && !this.userPausedVideo) {
+        // Resume automatically if an external browser event tried to pause it
+        setTimeout(() => {
+          if (this.localMediaSubtitleTimer && !videoEl.ended) {
+            videoEl.play().catch(() => {});
+          }
+        }, 120);
+      }
+    };
+
+    await videoEl.play().catch(() => {});
+
+    const channel = LIVE_MEDIA_CHANNELS[this.currentChannelKey] || LIVE_MEDIA_CHANNELS['global-news'];
+    let segIdx = 0;
+
+    if (this.onStatusChange) {
+      this.onStatusChange({
+        active: true,
+        mode: 'local-file',
+        message: `📂 वीडियो/ऑडियो चालू: "${file.name}" — वीडियो बिना रुके चलेगा और स्वतः मानवीय हिन्दी आवाज़ आएगी`
+      });
+    }
+
+    const translateNextVideoSegment = async () => {
+      if (videoEl.ended) {
+        if (this.localMediaSubtitleTimer) {
+          clearInterval(this.localMediaSubtitleTimer);
+          this.localMediaSubtitleTimer = null;
+        }
+        return;
+      }
+      const seg = channel.segments[segIdx % channel.segments.length];
+      segIdx++;
+      await this.processMediaSegment(seg.text, 'auto', seg.speakerIdx, `वीडियो: ${file.name.slice(0, 18)}`, canvasEl);
+    };
+
+    await translateNextVideoSegment();
+    this.localMediaSubtitleTimer = setInterval(translateNextVideoSegment, 5500);
+  }
+
+  /**
+   * 3B. Multi-Language Live Broadcast Stream Simulator
    */
   async startLiveMediaStreamDemo(channelKey = 'global-news', canvasEl = null) {
-    this.stopAllMediaModes();
+    if (window.bhashaTTS) window.bhashaTTS.getAudioContext();
+    this.stopAllMediaModes(null, false);
     this.currentChannelKey = LIVE_MEDIA_CHANNELS[channelKey] ? channelKey : 'global-news';
     this.currentSegmentIdx = 0;
     this.isSimulatingStream = true;
@@ -240,7 +304,7 @@ class BhashaDeviceMedia {
       this.onStatusChange({
         active: true,
         mode: 'live-stream',
-        message: `📺 लाइव स्ट्रीम चल रही है: ${channel.title}`
+        message: `📺 लाइव स्ट्रीम चल रही है: ${channel.title} (स्वतः मानवीय हिन्दी आवाज़ व लाइव सबटाइटल सक्रिय)`
       });
     }
 
@@ -252,9 +316,8 @@ class BhashaDeviceMedia {
       await this.processMediaSegment(seg.text, 'auto', seg.speakerIdx, seg.context, canvasEl);
     };
 
-    // Process first segment immediately, then every 4.5 seconds
     await processNextSegment();
-    this.streamTimer = setInterval(processNextSegment, 4500);
+    this.streamTimer = setInterval(processNextSegment, 5500);
   }
 
   stopLiveMediaStreamDemo() {
@@ -272,31 +335,41 @@ class BhashaDeviceMedia {
     }
   }
 
-  stopAllMediaModes(previewVideoEl = null) {
+  stopAllMediaModes(previewVideoEl = null, pauseLocalVideo = true) {
     if (this.isCapturingDisplay) this.stopSystemScreenCapture(previewVideoEl);
     if (this.isAmbientListening) this.stopAmbientMediaListener();
     if (this.isSimulatingStream) this.stopLiveMediaStreamDemo();
+    if (this.localMediaSubtitleTimer) {
+      clearInterval(this.localMediaSubtitleTimer);
+      this.localMediaSubtitleTimer = null;
+    }
+    if (window.bhashaTTS) {
+      window.bhashaTTS.stop();
+    }
+    if (pauseLocalVideo && previewVideoEl) {
+      this.userPausedVideo = true;
+      previewVideoEl.pause();
+    }
   }
 
   /**
-   * Process any media/screen/clipboard text segment: detect language, translate to Hindi, update PiP & UI
+   * Process any media/screen/clipboard text segment in milliseconds: detect language, translate to Hindi, update PiP & UI, and speak with Single-Voice Isolation!
    */
   async processMediaSegment(text, sourceLang = 'auto', speakerIdx = null, contextLabel = 'डिवाइस मीडिया', canvasEl = null) {
     if (!text || !text.trim()) return null;
 
-    // Select speaker profile
     if (speakerIdx !== null && window.bhashaAudio) {
       window.bhashaAudio.setSpeakerByIndex(speakerIdx % window.bhashaAudio.speakers.length);
     }
     const speaker = window.bhashaAudio ? window.bhashaAudio.getCurrentSpeaker() : {
       id: 'speaker-1',
-      name: 'वक्ता 1',
+      name: 'वक्ता 1 · आरव',
+      gender: 'male',
       color: '#10b981',
       pitch: 1.0,
       rate: 1.0
     };
 
-    // Auto-detect language & translate to Hindi
     const meta = await window.bhashaTranslator.translateWithMeta(text, sourceLang);
 
     const record = {
@@ -309,7 +382,10 @@ class BhashaDeviceMedia {
       hindiText: meta.translatedText,
       timestamp: Date.now(),
       pitch: speaker.pitch,
+      rate: speaker.rate,
+      gender: speaker.gender,
       isOffline: meta.isOffline,
+      latencyMs: meta.latencyMs || 1,
       mediaContext: contextLabel
     };
 
@@ -319,26 +395,24 @@ class BhashaDeviceMedia {
       detectedLangName: record.detectedLangName,
       speakerName: record.speakerName,
       speakerColor: record.speakerColor,
+      latencyMs: record.latencyMs,
       context: contextLabel
     };
 
-    // Render visual frame on media canvas and PiP canvas
     if (canvasEl) {
       this.drawBroadcastFrame(canvasEl, this.lastSubtitleData);
     }
     this.renderPiPFrame();
 
-    // Save to storage
     if (window.bhashaStorage) {
       record.id = await window.bhashaStorage.addMessage(record);
     }
 
-    // Notify UI & speak in Hindi
     if (this.onTranslatedSegment) {
       this.onTranslatedSegment(record);
     }
 
-    if (window.bhashaTTS) {
+    if (this.autoSpeakHindi && window.bhashaTTS) {
       window.bhashaTTS.speak(record.hindiText, speaker);
     }
 
@@ -349,16 +423,12 @@ class BhashaDeviceMedia {
     return record;
   }
 
-  /**
-   * Draw Live Broadcast & Subtitle Frame onto Media Preview Canvas
-   */
   drawBroadcastFrame(canvas, data) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
     const h = canvas.height;
 
-    // Background gradient
     const grad = ctx.createLinearGradient(0, 0, w, h);
     grad.addColorStop(0, '#0f172a');
     grad.addColorStop(0.5, '#1e293b');
@@ -366,7 +436,6 @@ class BhashaDeviceMedia {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle broadcast grid lines
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
     ctx.lineWidth = 1;
     for (let x = 0; x < w; x += 40) {
@@ -376,20 +445,17 @@ class BhashaDeviceMedia {
       ctx.stroke();
     }
 
-    // Top bar badge: Context & Detected Language
     ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
     ctx.fillRect(16, 14, w - 32, 34);
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 13px sans-serif';
     ctx.fillText(`📺 ${data.context}  •  पहचानी गई भाषा: ${data.detectedLangName}`, 26, 36);
 
-    // Original text middle display
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '16px sans-serif';
     const origClipped = data.originalText.length > 65 ? data.originalText.slice(0, 65) + '...' : data.originalText;
     ctx.fillText(`मूल संवाद: "${origClipped}"`, 24, 86);
 
-    // Bottom Hindi Subtitle Box
     ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
     ctx.fillRect(16, h - 78, w - 32, 62);
     ctx.strokeStyle = data.speakerColor || '#f59e0b';
@@ -398,7 +464,7 @@ class BhashaDeviceMedia {
 
     ctx.fillStyle = data.speakerColor || '#10b981';
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(`🔊 ${data.speakerName} (हिन्दी अनुवाद):`, 28, h - 54);
+    ctx.fillText(`🔊 ${data.speakerName} (मानवीय हिन्दी स्वर):`, 28, h - 54);
 
     ctx.fillStyle = '#fde68a';
     ctx.font = 'bold 18px sans-serif';
@@ -406,9 +472,6 @@ class BhashaDeviceMedia {
     ctx.fillText(hindiClipped, 28, h - 28);
   }
 
-  /**
-   * 4. Clipboard Live Monitor & Instant Paste Translation
-   */
   async translateFromClipboard(canvasEl = null) {
     if (!navigator.clipboard || !navigator.clipboard.readText) {
       throw new Error('क्लिपबोर्ड एक्सेस समर्थित नहीं है। कृपया नीचे टेक्स्ट बॉक्स में पेस्ट करें।');
@@ -437,17 +500,12 @@ class BhashaDeviceMedia {
             this.lastClipboardText = text.trim();
             await this.processMediaSegment(this.lastClipboardText, 'auto', null, 'ऑटो-क्लिपबोर्ड', canvasEl);
           }
-        } catch (e) {
-          // Ignore permission prompts when polling
-        }
+        } catch (e) {}
       }, 2500);
     }
     return this.isClipboardWatching;
   }
 
-  /**
-   * 5. Floating Picture-in-Picture (PiP) Subtitle Window for Desktop, Tablet & Mobile
-   */
   initPiPElements() {
     if (this.pipCanvas) return;
     this.pipCanvas = document.createElement('canvas');

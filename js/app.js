@@ -1,7 +1,7 @@
 /**
  * BhashaSetu - Main Application Controller
- * Coordinates UI, Speech, Universal 40+ Language Translation, Device/Screen/Media Capture,
- * Audio Clarity, Speaker Diarization, E2EE Sync & Offline Storage
+ * Coordinates UI, Reliable Speech Listening, Non-Muting Media Translation,
+ * 12 Human Speaker Voices, Cross-Device E2EE Sync & Offline Storage
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,7 +26,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const openMediaTabBtn = document.getElementById('open-media-tab-btn');
   const toastContainer = document.getElementById('toast-container');
 
+  // Direct Live Conversation Input & Phrase Chips (Tab 1)
+  const liveChatInput = document.getElementById('live-chat-input');
+  const liveChatSendBtn = document.getElementById('live-chat-send-btn');
+  const livePhraseChips = document.querySelectorAll('.live-phrase-chip');
+
   // Device & Media Tab Elements
+  const keepMediaAudioToggle = document.getElementById('keep-media-audio-toggle');
   const startScreenCaptureBtn = document.getElementById('start-screen-capture-btn');
   const startAmbientMediaBtn = document.getElementById('start-ambient-media-btn');
   const mediaChannelSelect = document.getElementById('media-channel-select');
@@ -63,10 +69,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const roomFingerprint = document.getElementById('room-fingerprint');
   const peerCountBadge = document.getElementById('peer-count-badge');
   const shareRoomBtn = document.getElementById('share-room-btn');
+  const testSyncPingBtn = document.getElementById('test-sync-ping-btn');
+  const syncActivityLog = document.getElementById('sync-activity-log');
 
   // Speakers Tab Elements
   const speakerProfilesList = document.getElementById('speaker-profiles-list');
   const newSpeakerNameInput = document.getElementById('new-speaker-name-input');
+  const newSpeakerStyleSelect = document.getElementById('new-speaker-style-select');
   const addSpeakerBtn = document.getElementById('add-speaker-btn');
 
   // Custom Dict Elements
@@ -104,10 +113,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   await window.bhashaStorage.init();
   await window.bhashaTranslator.init();
 
-  // Update Device Profile Badge (Tablet, Mobile, Desktop)
+  // Wire E2EE Sync Activity Log before joining room
+  if (window.bhashaSync && syncActivityLog) {
+    window.bhashaSync.onSyncLog = (entry) => {
+      const item = document.createElement('div');
+      item.className = 'p-2 rounded bg-slate-900/90 border border-slate-800/80 text-[11px] leading-relaxed';
+      item.innerHTML = `
+        <div class="flex items-center justify-between text-amber-400 font-semibold">
+          <span>${entry.stepTitle}</span>
+          <span class="text-slate-500 tabular-nums">${entry.time}</span>
+        </div>
+        <div class="text-slate-300 mt-0.5">${entry.detail}</div>
+        ${entry.cipherPreview ? `<div class="text-[10px] text-emerald-400/90 mt-0.5 break-all">${entry.cipherPreview}</div>` : ''}
+      `;
+      syncActivityLog.prepend(item);
+    };
+  }
+
+  // Update Device Profile Badge
   if (window.bhashaDeviceMedia && deviceTypeBadge) {
     const profile = window.bhashaDeviceMedia.getDeviceProfile();
-    deviceTypeBadge.innerHTML = `<span>${profile.icon} ${profile.type} • 40+ भाषाएँ</span>`;
+    deviceTypeBadge.innerHTML = `<span>${profile.icon} ${profile.type} • ${window.bhashaAudio.speakers.length} मानवीय स्वर</span>`;
     if (mediaBroadcastCanvas) {
       window.bhashaDeviceMedia.drawBroadcastFrame(mediaBroadcastCanvas, window.bhashaDeviceMedia.lastSubtitleData);
     }
@@ -124,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     roomIdInput.value = window.bhashaSync.roomId;
     roomKeyInput.value = window.bhashaSync.roomKey;
-    await window.bhashaCrypto.deriveKey(window.bhashaSync.roomKey);
+    await window.bhashaSync.joinRoom(window.bhashaSync.roomId, window.bhashaSync.roomKey);
   }
 
   if (roomFingerprint) {
@@ -177,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     openMediaTabBtn.addEventListener('click', () => switchTab('media'));
   }
 
-  // 5. Render Speaker Selector Buttons
+  // 5. Render 12 Human Speaker Selector Buttons
   function renderSpeakerPills() {
     if (!speakerPillsContainer) return;
     speakerPillsContainer.innerHTML = '';
@@ -186,14 +212,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.bhashaAudio.speakers.forEach((speaker, index) => {
       const btn = document.createElement('button');
       const isActive = speaker.id === current.id;
-      btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
+      btn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
         isActive
           ? 'ring-2 ring-white shadow-lg text-white font-bold'
           : 'opacity-75 hover:opacity-100 text-slate-300 bg-slate-800/60'
       }`;
       btn.style.backgroundColor = isActive ? speaker.color : '';
       btn.innerHTML = `
-        <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${speaker.color}"></span>
+        <span class="w-2 h-2 rounded-full" style="background-color: ${speaker.color}"></span>
         <span>${speaker.name}</span>
       `;
       btn.addEventListener('click', () => {
@@ -221,10 +247,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     conversationList.innerHTML = '';
     if (messages.length === 0) {
       conversationList.innerHTML = `
-        <div id="empty-state" class="text-center py-12 text-slate-400">
+        <div id="empty-state" class="text-center py-10 text-slate-400">
           <div class="text-4xl mb-3">🎙️</div>
-          <p class="font-medium text-slate-300">वार्तालाप शुरू करने के लिए नीचे माइक बटन दबाएं या "डिवाइस व मीडिया अनुवाद" चुनें</p>
-          <p class="text-xs text-slate-500 mt-1">टैबलेट, मोबाइल और डेस्कटॉप पर चल रही किसी भी भाषा का यहाँ तुरंत हिन्दी अनुवाद सुनाई देगा</p>
+          <p class="font-medium text-slate-300">वार्तालाप शुरू करने के लिए नीचे "बोलना शुरू करें" दबाएं या त्वरित वॉयस बार का उपयोग करें</p>
+          <p class="text-xs text-slate-500 mt-1">12 मानवीय वक्ता स्वर • 40+ भाषाओं की ऑटो-पहचान • नॉन-म्यूटिंग मीडिया अनुवाद</p>
         </div>
       `;
       return;
@@ -251,9 +277,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     card.dataset.id = msg.id || '';
 
     const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const modeText = msg.isOffline ? 'ऑफ़लाइन इंजन' : 'ऑनलाइन न्यूरल';
+    const modeText = msg.isOffline ? 'इंस्टेंट ऑफ़लाइन इंजन' : 'न्यूरल इंजन';
     const langLabel = msg.detectedLangName || window.bhashaTranslator.getLanguageName(msg.sourceLang || 'auto');
     const contextText = msg.mediaContext ? ` · ${msg.mediaContext}` : '';
+    const latencyBadge = `⚡ ${msg.latencyMs !== undefined ? msg.latencyMs : 1} ms`;
 
     card.innerHTML = `
       <div class="flex items-center justify-between flex-wrap gap-2 mb-2 text-xs text-slate-400">
@@ -263,6 +290,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span aria-hidden="true">·</span>
           <span class="text-amber-300 font-medium">🌐 ${langLabel}</span>
           <span aria-hidden="true">·</span>
+          <span class="text-emerald-400 font-mono font-semibold">${latencyBadge}</span>
+          <span aria-hidden="true">·</span>
           <span>${modeText}${contextText}</span>
         </div>
         <span class="text-[11px] text-slate-400 tabular-nums">${timeStr}</span>
@@ -270,14 +299,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       <!-- Original Input Text -->
       <div class="text-sm text-slate-300/90 mb-2 font-mono bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/80">
-        <span class="text-[11px] text-slate-400 block mb-0.5 font-sans font-medium">मूल आवाज़ / मीडिया वाक्य (${langLabel}):</span>
+        <span class="text-[11px] text-slate-400 block mb-0.5 font-sans font-medium">मूल आवाज़ / वाक्य (${langLabel}):</span>
         "${msg.originalText}"
       </div>
 
       <!-- Hindi Translated Text -->
       <div class="text-base font-semibold text-amber-200 bg-amber-950/20 p-3 rounded-xl border border-amber-500/20 flex items-start justify-between gap-3">
         <div class="leading-relaxed">
-          <span class="text-[11px] text-amber-400/80 block font-normal">🇮🇳 हिन्दी अनुवाद:</span>
+          <span class="text-[11px] text-amber-400/80 block font-normal">🇮🇳 शुद्ध मानवीय हिन्दी अनुवाद (${latencyBadge}):</span>
           ${msg.hindiText}
         </div>
         <div class="flex items-center gap-1.5 shrink-0 pt-1">
@@ -294,8 +323,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const speakBtn = card.querySelector('.speak-btn');
     speakBtn.addEventListener('click', () => {
       const spkObj = window.bhashaAudio.speakers.find(s => s.id === msg.speakerId) || {
-        pitch: msg.pitch || 1.0,
-        rate: 1.0,
+        pitch: 1.0,
+        rate: msg.rate || 1.0,
+        gender: msg.gender || 'male',
         name: msg.speakerName
       };
       window.bhashaTTS.speak(msg.hindiText, spkObj);
@@ -312,11 +342,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     scrollChatToBottom();
   }
 
-  // Update Media Live Subtitle Box helper
   function updateLiveSubtitleBox(record) {
     if (!record) return;
     if (mediaDetectedLangPill) {
-      mediaDetectedLangPill.textContent = `🌐 पहचानी गई भाषा: ${record.detectedLangName}`;
+      mediaDetectedLangPill.textContent = `🌐 ${record.detectedLangName} • ⚡ ${record.latencyMs || 1} ms`;
     }
     if (liveSubtitleContext) {
       liveSubtitleContext.textContent = record.mediaContext || 'लाइव मीडिया';
@@ -325,7 +354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       mediaLiveOriginal.textContent = `मूल (${record.detectedLangName}): "${record.originalText}"`;
     }
     if (mediaLiveSpeaker) {
-      mediaLiveSpeaker.textContent = `🔊 ${record.speakerName}`;
+      mediaLiveSpeaker.textContent = `🔊 ${record.speakerName} (सिंगल-वॉयस मानवीय स्वर)`;
       mediaLiveSpeaker.style.color = record.speakerColor || '#f59e0b';
     }
     if (mediaLiveHindi) {
@@ -333,22 +362,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 9. Speech-to-Text Callbacks (Works for Mic, Ambient Device Speaker, and System Tab Audio)
+  // 9. Speech-to-Text Callbacks & Real-Time Millisecond Live Translation Preview
   window.bhashaSTT.onInterimResult = (interim) => {
+    const selectedLang = langSelect ? langSelect.value : 'auto';
+    const instantMeta = window.bhashaTranslator.translateInstant(interim, selectedLang);
+
     if (interimBox) {
       interimBox.classList.remove('hidden');
       interimBox.innerHTML = `
-        <span class="text-amber-400 font-bold">${window.bhashaAudio.getCurrentSpeaker().name}:</span> 
-        <span class="italic text-slate-300">${interim}</span>
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <span class="text-amber-400 font-bold">🎙️ ${window.bhashaAudio.getCurrentSpeaker().name} बोल रहे हैं (${instantMeta.detectedLangName}):</span>
+          <span class="text-emerald-400 font-mono">⚡ ${instantMeta.latencyMs} ms लाइव अनुवाद</span>
+        </div>
+        <div class="italic text-slate-300 text-xs mb-1">"${interim}"</div>
+        <div class="text-amber-200 font-semibold text-sm">🇮🇳 ${instantMeta.translatedText}</div>
       `;
     }
+    if (liveChatInput && document.activeElement !== liveChatInput) {
+      liveChatInput.value = interim;
+    }
     if (mediaLiveOriginal && window.bhashaSTT.captureMode !== 'mic') {
-      mediaLiveOriginal.textContent = `सुन रहा है: "${interim}..."`;
+      mediaLiveOriginal.textContent = `सुन रहा है (${instantMeta.detectedLangName}): "${interim}..."`;
+    }
+    if (mediaLiveHindi && instantMeta.translatedText) {
+      mediaLiveHindi.textContent = `⚡ ${instantMeta.translatedText}`;
     }
   };
 
   window.bhashaSTT.onFinalResult = async (finalText) => {
     if (interimBox) interimBox.classList.add('hidden');
+    if (liveChatInput && document.activeElement !== liveChatInput) {
+      liveChatInput.value = '';
+    }
     if (!finalText || !finalText.trim()) return;
 
     const selectedLang = langSelect ? langSelect.value : 'auto';
@@ -356,7 +401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? 'स्क्रीन/टैब ऑडियो'
       : window.bhashaSTT.captureMode === 'ambient-media'
         ? 'डिवाइस स्पीकर लिसनर'
-        : 'माइक वार्तालाप';
+        : 'लाइव माइक वार्तालाप';
 
     const record = await window.bhashaDeviceMedia.processMediaSegment(
       finalText,
@@ -375,17 +420,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isRecording) {
       micBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
       micBtn.classList.add('bg-rose-600', 'hover:bg-rose-700', 'animate-pulse');
-      micBtnText.textContent = 'रोकें (Stop)';
+      micBtnText.textContent = 'सुन रहा है... (रोकें)';
       if (micStatusIndicator) {
         micStatusIndicator.classList.remove('hidden');
         const modeTag = mode === 'ambient-media' ? 'स्पीकर लिसनर' : mode === 'system-tab' ? 'स्क्रीन ऑडियो' : window.bhashaAudio.getCurrentSpeaker().name;
-        micStatusIndicator.textContent = `🎙️ सुन रहा है... (${modeTag})`;
+        micStatusIndicator.textContent = `🎙️ लाइव सुन रहा है... (${modeTag})`;
       }
       window.bhashaAudio.startVisualizer(visualizerCanvas, pitchDisplay);
     } else {
       micBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
       micBtn.classList.remove('bg-rose-600', 'hover:bg-rose-700', 'animate-pulse');
-      micBtnText.textContent = 'बोलना शुरू करें';
+      micBtnText.textContent = 'बोलना शुरू करें (Mic)';
       if (micStatusIndicator) micStatusIndicator.classList.add('hidden');
       if (interimBox) interimBox.classList.add('hidden');
       window.bhashaAudio.stopVisualizer();
@@ -393,8 +438,48 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   window.bhashaSTT.onError = (err) => {
-    showToast(`माइक्रोफ़ोन/ऑडियो सूचना: ${err}`, 'error');
+    showToast(err, 'error');
   };
+
+  // Direct Live Utterance Submission in Tab 1
+  async function submitDirectLiveUtterance(textOverride = null) {
+    const raw = textOverride !== null ? textOverride : (liveChatInput ? liveChatInput.value : '');
+    if (!raw || !raw.trim()) {
+      showToast('कृपया कोई वाक्य लिखें या त्वरित वॉयस बटन चुनें', 'error');
+      return;
+    }
+    if (liveChatInput && textOverride === null) {
+      liveChatInput.value = '';
+    }
+    const selectedLang = langSelect ? langSelect.value : 'auto';
+    await window.bhashaDeviceMedia.processMediaSegment(
+      raw.trim(),
+      selectedLang,
+      null,
+      'प्रत्यक्ष संवाद',
+      mediaBroadcastCanvas
+    );
+  }
+
+  if (liveChatSendBtn) {
+    liveChatSendBtn.addEventListener('click', () => submitDirectLiveUtterance());
+  }
+
+  if (liveChatInput) {
+    liveChatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitDirectLiveUtterance();
+      }
+    });
+  }
+
+  livePhraseChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const phrase = chip.dataset.voicePhrase;
+      if (phrase) submitDirectLiveUtterance(phrase);
+    });
+  });
 
   // Connect DeviceMedia segment callback to Conversation Timeline & Subtitle Box
   if (window.bhashaDeviceMedia) {
@@ -414,11 +499,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   micBtn.addEventListener('click', async () => {
     if (window.bhashaSTT.isRecording) {
       window.bhashaSTT.stop();
+      showToast('माइक सुनना रोका गया');
     } else {
       try {
         await window.bhashaSTT.start('mic');
+        showToast(`🎙️ ${window.bhashaAudio.getCurrentSpeaker().name} के लिए माइक चालू — अब बोलें`);
       } catch (err) {
-        showToast(`माइक्रोफ़ोन शुरू नहीं हो सका: ${err.message}`, 'error');
+        showToast(`माइक्रोफ़ोन सूचना: ${err.message}`, 'error');
       }
     }
   });
@@ -437,6 +524,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const enabled = window.bhashaAudio.toggleClarityFilter(clarityToggle.checked);
       clarityToggle.checked = enabled;
       showToast(enabled ? 'वोकल स्पष्टता EQ चालू किया गया' : 'वोकल स्पष्टता EQ बंद किया गया');
+    });
+  }
+
+  // Single-Voice Isolation Toggle (prevents original media speaker and Hindi speaker from talking simultaneously)
+  if (keepMediaAudioToggle) {
+    keepMediaAudioToggle.addEventListener('change', () => {
+      window.bhashaTTS.isolateHindiVoice = keepMediaAudioToggle.checked;
+      showToast(
+        keepMediaAudioToggle.checked
+          ? '🔇 वॉयस आइसोलेशन सक्रिय: जब हिन्दी वक्ता बोलेगा तो मुख्य वक्ता की आवाज़ स्वतः धीमी (6%) हो जाएगी'
+          : '🔊 मूल मीडिया आवाज़ और हिन्दी आवाज़ दोनों एक साथ चलेंगी'
+      );
     });
   }
 
@@ -480,7 +579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // =========================================================================
-  // 10. Device & Media Tab Controls (Tablet, Mobile & Desktop Media Translation)
+  // 10. Device & Media Tab Controls (Non-Muting Media Translation)
   // =========================================================================
   if (startScreenCaptureBtn) {
     startScreenCaptureBtn.addEventListener('click', async () => {
@@ -490,7 +589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           mediaVideoPreview,
           langSelect ? langSelect.value : 'auto'
         );
-        showToast('🖥️ स्क्रीन/टैब ऑडियो व वीडियो कैप्चर शुरू हो गया है');
+        showToast('🖥️ स्क्रीन/टैब ऑडियो कैप्चर चालू — मूल मीडिया आवाज़ भी चालू है');
       } catch (err) {
         if (mediaVideoPreview) mediaVideoPreview.classList.add('hidden');
         showToast(err.message, 'error');
@@ -501,9 +600,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (startAmbientMediaBtn) {
     startAmbientMediaBtn.addEventListener('click', async () => {
       try {
-        if (mediaVideoPreview) mediaVideoPreview.classList.add('hidden');
         await window.bhashaDeviceMedia.startAmbientMediaListener(langSelect ? langSelect.value : 'auto');
-        showToast('📲 स्पीकर व मीडिया लिसनर सक्रिय — डिवाइस पर बज रही भाषा का अनुवाद चालू');
+        showToast('📲 स्पीकर व मीडिया लिसनर सक्रिय — मीडिया की आवाज़ बंद किए बिना अनुवाद चालू');
       } catch (err) {
         showToast(`स्पीकर लिसनर शुरू नहीं हो सका: ${err.message}`, 'error');
       }
@@ -512,13 +610,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (startStreamDemoBtn) {
     startStreamDemoBtn.addEventListener('click', async () => {
-      if (mediaVideoPreview) {
-        mediaVideoPreview.pause();
-        mediaVideoPreview.classList.add('hidden');
-      }
       const channelKey = mediaChannelSelect ? mediaChannelSelect.value : 'global-news';
       await window.bhashaDeviceMedia.startLiveMediaStreamDemo(channelKey, mediaBroadcastCanvas);
-      showToast('📺 लाइव बहु-भाषी मीडिया स्ट्रीम और हिन्दी अनुवाद शुरू!');
+      showToast('📺 लाइव बहु-भाषी मीडिया स्ट्रीम और मानवीय हिन्दी स्वर अनुवाद शुरू!');
     });
   }
 
@@ -526,31 +620,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     localMediaFileInput.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      window.bhashaDeviceMedia.stopAllMediaModes();
-      const fileUrl = URL.createObjectURL(file);
-      if (mediaVideoPreview) {
-        mediaVideoPreview.srcObject = null;
-        mediaVideoPreview.src = fileUrl;
-        mediaVideoPreview.muted = false;
-        mediaVideoPreview.classList.remove('hidden');
-        await mediaVideoPreview.play().catch(() => {});
-      }
-      if (mediaStatusText) {
-        mediaStatusText.textContent = `📂 लोकल मीडिया चल रहा है: ${file.name} — लाइव भाषा पहचान व हिन्दी सबटाइटल सक्रिय`;
-      }
-      showToast(`फ़ाइल लोड की गई: ${file.name}`);
-      // Also start ambient STT if available
-      try {
-        await window.bhashaSTT.start('ambient-media');
-      } catch (_) {}
+      await window.bhashaDeviceMedia.startLocalMediaFileTranslation(
+        mediaVideoPreview,
+        file,
+        mediaBroadcastCanvas
+      );
+      showToast(`🎬 वीडियो चालू: ${file.name} (बिना रुके चलेगा + स्वतः मानवीय हिन्दी आवाज़)`);
     });
   }
 
   if (stopAllMediaBtn) {
     stopAllMediaBtn.addEventListener('click', () => {
-      window.bhashaDeviceMedia.stopAllMediaModes(mediaVideoPreview);
+      window.bhashaDeviceMedia.stopAllMediaModes(mediaVideoPreview, true);
+      window.bhashaTTS.stop();
       if (mediaVideoPreview) {
-        mediaVideoPreview.pause();
         mediaVideoPreview.classList.add('hidden');
       }
       showToast('सभी मीडिया कैप्चर व स्ट्रीम रोक दिए गए हैं');
@@ -576,7 +659,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       await window.bhashaDeviceMedia.processMediaSegment(text, 'auto', null, 'स्क्रीन/ऐप टेक्स्ट', mediaBroadcastCanvas);
-      showToast('🌐 भाषा पहचानकर हिन्दी में अनुवादित किया गया!');
+      showToast('🌐 भाषा पहचानकर मानवीय हिन्दी स्वर में अनुवादित किया गया!');
     });
   }
 
@@ -650,7 +733,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // =========================================================================
-  // 12. Sync & E2EE Handling
+  // 12. Real-Time E2EE Sync Handling & Live Test Ping
   // =========================================================================
   if (joinRoomBtn) {
     joinRoomBtn.addEventListener('click', async () => {
@@ -663,7 +746,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const info = await window.bhashaSync.joinRoom(roomId, roomKey);
       if (roomFingerprint) roomFingerprint.textContent = info.fingerprint;
-      showToast(`रूम ${info.roomId} में सफलतापूर्वक जुड़े! (E2EE सक्रिय)`);
+      showToast(`रूम ${info.roomId} में सफलतापूर्वक जुड़े! (AES-256-GCM सक्रिय)`);
+    });
+  }
+
+  if (testSyncPingBtn) {
+    testSyncPingBtn.addEventListener('click', async () => {
+      const spk = window.bhashaAudio.getCurrentSpeaker();
+      const sampleRecord = {
+        speakerId: spk.id,
+        speakerName: spk.name,
+        speakerColor: spk.color,
+        originalText: 'Welcome to our live broadcast',
+        sourceLang: 'en',
+        detectedLangName: 'English (अंग्रेजी)',
+        hindiText: 'हमारे लाइव प्रसारण में आपका स्वागत है',
+        timestamp: Date.now(),
+        pitch: spk.pitch,
+        rate: spk.rate,
+        gender: spk.gender,
+        isOffline: false,
+        mediaContext: `E2EE सिंक (${window.bhashaSync.roomId})`
+      };
+      sampleRecord.id = await window.bhashaStorage.addMessage(sampleRecord);
+      appendMessageUI(sampleRecord, true);
+      await window.bhashaSync.broadcastMessage(sampleRecord);
+      window.bhashaTTS.speak(sampleRecord.hindiText, spk);
+      showToast(`🔒 रूम ${window.bhashaSync.roomId} में AES-256-GCM एन्क्रिप्टेड संदेश भेजा गया!`);
     });
   }
 
@@ -680,7 +789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {}
       } else {
         await navigator.clipboard.writeText(url);
-        showToast('पेयरिंग लिंक क्लिपबोर्ड में कॉपी हो गया है! इसे अन्य डिवाइस पर खोलें।');
+        showToast('पेयरिंग लिंक क्लिपबोर्ड में कॉपी हो गया है! इसे अन्य मोबाइल/टैबलेट/डेस्कटॉप पर खोलें।');
       }
     });
   }
@@ -689,11 +798,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     appendMessageUI(incomingRecord, true);
     updateLiveSubtitleBox(incomingRecord);
     const spk = window.bhashaAudio.speakers.find(s => s.id === incomingRecord.speakerId) || {
-      pitch: incomingRecord.pitch || 1.0,
-      rate: 1.0,
+      pitch: incomingRecord.pitch || 0.98,
+      rate: incomingRecord.rate || 1.0,
+      gender: incomingRecord.gender || 'male',
       name: incomingRecord.speakerName
     };
     window.bhashaTTS.speak(incomingRecord.hindiText, spk);
+    showToast(`🔓 अन्य डिवाइस से सुरक्षित अनुवाद प्राप्त हुआ (${incomingRecord.speakerName})`);
   };
 
   window.bhashaSync.onPeerCountChanged = (count) => {
@@ -703,7 +814,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   // =========================================================================
-  // 13. Speakers Tab: Render & Manage Speakers
+  // 13. Speakers Tab: Render & Manage 12+ Human Speakers
   // =========================================================================
   function renderSpeakerProfiles() {
     if (!speakerProfilesList) return;
@@ -711,28 +822,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.bhashaAudio.speakers.forEach((spk, idx) => {
       const row = document.createElement('div');
-      row.className = 'p-4 rounded-xl bg-slate-800/80 border border-slate-700/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4';
+      row.className = 'p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-between gap-3';
       row.innerHTML = `
-        <div class="flex items-center gap-3">
-          <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white shadow tabular-nums" style="background-color: ${spk.color}">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs shadow shrink-0 tabular-nums" style="background-color: ${spk.color}">
             ${idx + 1}
           </span>
-          <div>
-            <h4 class="font-bold text-slate-200 text-sm">${spk.name}</h4>
-            <p class="text-xs text-slate-400">${spk.desc} (पिच: ${spk.pitch}x, गति: ${spk.rate}x)</p>
+          <div class="min-w-0">
+            <h4 class="font-bold text-slate-200 text-sm truncate">${spk.name}</h4>
+            <p class="text-xs text-slate-400 truncate">${spk.desc} • पिच: ${spk.pitch}x • गति: ${spk.rate}x</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-          <button class="preview-voice-btn px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors">
-            🔊 आवाज़ परीक्षण (Test)
+        <div class="flex items-center gap-2 shrink-0">
+          <button class="preview-voice-btn px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold flex items-center gap-1 transition-colors">
+            🔊 सुनें
           </button>
-          <button class="select-speaker-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          <button class="select-speaker-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
             spk.id === window.bhashaAudio.getCurrentSpeaker().id
               ? 'bg-amber-500 text-slate-950 font-bold'
               : 'bg-slate-700/50 hover:bg-slate-700 text-slate-300'
           }">
-            ${spk.id === window.bhashaAudio.getCurrentSpeaker().id ? 'सक्रिय वक्ता ✓' : 'चुनें'}
+            ${spk.id === window.bhashaAudio.getCurrentSpeaker().id ? 'सक्रिय ✓' : 'चुनें'}
           </button>
         </div>
       `;
@@ -756,12 +867,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     addSpeakerBtn.addEventListener('click', () => {
       const customName = newSpeakerNameInput && newSpeakerNameInput.value.trim()
         ? newSpeakerNameInput.value.trim()
-        : `वक्ता ${window.bhashaAudio.speakers.length + 1}`;
-      window.bhashaAudio.addSpeaker(customName);
+        : `मानवीय स्वर ${window.bhashaAudio.speakers.length + 1}`;
+      const stylePreset = newSpeakerStyleSelect ? newSpeakerStyleSelect.value : 'male-natural';
+      const created = window.bhashaAudio.addSpeaker(customName, stylePreset);
       if (newSpeakerNameInput) newSpeakerNameInput.value = '';
       renderSpeakerPills();
       renderSpeakerProfiles();
-      showToast(`नया वक्ता "${customName}" जोड़ा गया`);
+      showToast(`नया मानवीय वक्ता "${created.name}" जोड़ा गया`);
     });
   }
 

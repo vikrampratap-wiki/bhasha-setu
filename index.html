@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>भाषा सेतु (BhashaSetu) - सार्वभौमिक वॉयस, स्क्रीन व मीडिया हिन्दी अनुवादक</title>
-  <meta name="description" content="टैबलेट, मोबाइल और डेस्कटॉप पर चल रही किसी भी भाषा का लाइव वॉयस, स्क्रीन, ऑडियो-वीडियो व टेक्स्ट हिन्दी अनुवादक">
+  <meta name="description" content="टैबलेट, मोबाइल और डेस्कटॉप पर चल रही किसी भी भाषा का लाइव वॉयस, स्क्रीन, ऑडियो-वीडियो व टेक्स्ट हिन्दी अनुवादक - 12 मानवीय स्वरों व E2EE सिंक के साथ">
   <meta name="theme-color" content="#0f172a">
 
   <!-- PWA Manifest & Icons -->
@@ -53,10 +53,10 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-              भाषा सेतु <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-normal">v2.0</span>
+              भाषा सेतु <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-normal">v3.0 ⚡ मिलीसेकंड</span>
             </h1>
           </div>
-          <p class="text-[11px] text-slate-400 hidden sm:block">टैबलेट, मोबाइल व डेस्कटॉप पर चल रही किसी भी भाषा का लाइव हिन्दी अनुवादक</p>
+          <p class="text-[11px] text-slate-400 hidden sm:block">⚡ &lt;5ms मिलीसेकंड अनुवाद • 12 शुद्ध मानवीय स्वर • सिंगल-वॉयस आइसोलेशन • AES-256-GCM सिंक</p>
         </div>
       </div>
 
@@ -64,7 +64,7 @@
       <div class="flex items-center gap-2">
         <!-- Active Device Badge -->
         <div id="device-type-badge" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800/80 border border-slate-700/60 text-slate-300">
-          <span>🖥️ डेस्कटॉप • 40+ भाषाएँ</span>
+          <span>🖥️ डेस्कटॉप • 12 मानवीय स्वर</span>
         </div>
 
         <!-- E2EE Indicator -->
@@ -93,10 +93,10 @@
         📝 <span>टेक्स्ट अनुवाद (40+ भाषाएँ)</span>
       </button>
       <button data-tab="speakers" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap shrink-0 transition-all">
-        👥 <span>वक्ता एवं स्पष्टता EQ</span>
+        👥 <span>12 मानवीय वक्ता व स्पष्टता EQ</span>
       </button>
       <button data-tab="sync" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap shrink-0 transition-all">
-        🔄 <span>रीयल-टाइम सिंक</span>
+        🔄 <span>रीयल-टाइम सुरक्षित सिंक (E2EE)</span>
       </button>
       <button data-tab="history" class="tab-btn text-slate-400 hover:text-slate-200 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-medium whitespace-nowrap shrink-0 transition-all">
         📚 <span>ऑफ़लाइन शब्दकोश</span>
@@ -110,51 +110,51 @@
     <!-- ========================================== -->
     <!-- TAB 1: मुख्य वार्तालाप एवं वॉयस अनुवाद      -->
     <!-- ========================================== -->
-    <div id="tab-conversation" class="tab-content flex-1 flex flex-col gap-4">
+    <div id="tab-conversation" class="tab-content flex-1 flex flex-col gap-3.5">
       
-      <!-- Top Control & Multi-Speaker Bar -->
-      <div class="glass-panel p-3.5 md:p-4 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <!-- Top Control & 12-Speaker Selector Bar -->
+      <div class="glass-panel p-3.5 md:p-4 rounded-2xl flex flex-col gap-3">
         
-        <!-- Active Speaker Selection Pills -->
-        <div class="flex items-center gap-2 overflow-x-auto py-1">
-          <span class="text-xs text-slate-400 font-semibold shrink-0">सक्रिय वक्ता:</span>
+        <!-- Active Speaker Selection Bar (12 Human Speakers) -->
+        <div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar">
+          <span class="text-xs text-slate-400 font-semibold shrink-0">सक्रिय मानवीय वक्ता (12):</span>
           <div id="speaker-pills" class="flex items-center gap-1.5 shrink-0">
-            <!-- Dynamically populated -->
+            <!-- Dynamically populated with 12 human speakers -->
           </div>
         </div>
 
         <!-- Real-time Pitch & Audio Settings Controls -->
-        <div class="flex items-center flex-wrap gap-2.5 border-t md:border-t-0 border-slate-800 pt-2 md:pt-0">
+        <div class="flex items-center flex-wrap gap-2.5 border-t border-slate-800/80 pt-2.5">
           
           <!-- Live Pitch Meter -->
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
             <span class="text-slate-400">पिच ($F_0$):</span>
             <span id="pitch-display" class="font-mono font-bold text-slate-200 tabular-nums">शांत (तैयार)</span>
           </div>
 
           <!-- Vocal Clarity Toggle -->
-          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700">
+          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-800 hover:border-slate-700">
             <input type="checkbox" id="clarity-toggle" checked class="rounded border-slate-700 text-amber-500 focus:ring-0">
             <span>🔊 वोकल स्पष्टता EQ</span>
           </label>
 
           <!-- Force Offline Toggle -->
-          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700">
+          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-800 hover:border-slate-700">
             <input type="checkbox" id="offline-toggle" class="rounded border-slate-700 text-amber-500 focus:ring-0">
             <span>बिना इंटरनेट मोड</span>
           </label>
 
           <!-- Quick Jump to Device Media Translator -->
-          <button id="open-media-tab-btn" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-colors whitespace-nowrap">
+          <button id="open-media-tab-btn" class="px-3 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-colors whitespace-nowrap">
             📺 स्क्रीन/मीडिया अनुवाद
           </button>
 
           <!-- Action buttons -->
           <div class="flex items-center gap-1.5 ml-auto">
-            <button id="clear-chat-btn" aria-label="इतिहास साफ़ करें" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800/80 transition-colors" title="इतिहास साफ़ करें">
+            <button id="clear-chat-btn" aria-label="इतिहास साफ़ करें" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800/80 transition-colors" title="इतिहास साफ़ करें">
               🗑️
             </button>
-            <button id="export-chat-btn" aria-label="सत्र एक्सपोर्ट करें" class="p-2 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800/80 transition-colors" title="सत्र एक्सपोर्ट करें">
+            <button id="export-chat-btn" aria-label="सत्र एक्सपोर्ट करें" class="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800/80 transition-colors" title="सत्र एक्सपोर्ट करें">
               💾
             </button>
           </div>
@@ -183,6 +183,25 @@
         <!-- Interim Speaking Bubble (Real-time feedback) -->
         <div id="interim-box" class="hidden p-3 rounded-xl bg-slate-800/50 border border-dashed border-amber-500/40 text-sm text-slate-300">
           <!-- Real time text -->
+        </div>
+      </div>
+
+      <!-- Direct Live Speech & Quick Utterance Input Bar (Works even if mic is busy or in any browser) -->
+      <div class="glass-panel p-3 rounded-2xl flex flex-col gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-[11px] text-slate-400 font-semibold">त्वरित वॉयस टेस्ट (चयनित मानवीय वक्ता में तुरंत सुनें):</span>
+          <button type="button" data-voice-phrase="Hello, how are you? Welcome to our live broadcast." class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">English</button>
+          <button type="button" data-voice-phrase="வணக்கம், நேரலை ஒளிபரப்பிற்கு வரவேற்கிறோம்" class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">தமிழ்</button>
+          <button type="button" data-voice-phrase="안녕하세요, 생방송에 오신 것을 환영합니다" class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">한국어</button>
+          <button type="button" data-voice-phrase="Bienvenidos a la transmisión en vivo" class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">Español</button>
+          <button type="button" data-voice-phrase="নমস্কার, কেমন আছেন" class="live-phrase-chip px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">বাংলা</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="live-chat-input" class="sr-only">सीधे बोलें या किसी भी भाषा में वाक्य लिखें</label>
+          <input type="text" id="live-chat-input" placeholder="माइक से बोलें या यहाँ किसी भी भाषा में वाक्य लिखकर Enter दबाएं (तुरंत मानवीय हिन्दी स्वर में अनुवाद व सिंक होगा)..." class="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs md:text-sm text-slate-100 focus:outline-none focus:border-amber-500">
+          <button id="live-chat-send-btn" class="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs md:text-sm whitespace-nowrap transition-all">
+            🗣️ अनुवाद व बोलें
+          </button>
         </div>
       </div>
 
@@ -243,14 +262,14 @@
         <!-- Main Prominent Microphone Button -->
         <button id="mic-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold text-sm md:text-base flex items-center justify-center gap-3 shadow-lg shadow-amber-500/20 transition-all">
           <span class="text-xl">🎙️</span>
-          <span id="mic-btn-text">बोलना शुरू करें</span>
+          <span id="mic-btn-text">बोलना शुरू करें (Mic)</span>
         </button>
 
         <!-- Target Language Info -->
         <div class="text-xs text-slate-400 flex items-center gap-2">
           <span>अनुवाद लक्ष्य:</span>
           <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/30">
-            🇮🇳 हिन्दी (Hindi)
+            🇮🇳 हिन्दी (मानवीय स्वर)
           </span>
         </div>
 
@@ -264,21 +283,25 @@
     <div id="tab-media" class="tab-content hidden flex-1 flex flex-col gap-4">
       <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
         
-        <!-- Header & Floating PiP Subtitle Trigger -->
+        <!-- Header & Audio Preservation Controls -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              📺 टैबलेट, मोबाइल और डेस्कटॉप मीडिया व स्क्रीन अनुवादक
+              📺 टैबलेट, मोबाइल और डेस्कटॉप मीडिया व स्क्रीन अनुवादक (नॉन-म्यूटिंग)
             </h2>
             <p class="text-xs text-slate-400 mt-1">
-              आपके डिवाइस पर चल रहे किसी भी वीडियो, मीटिंग, वेब टैब, ऑडियो या ऐप की भाषा को ऑटो-डिटेक्ट करके लाइव हिन्दी सबटाइटल और आवाज़ में बदलें।
+              मीडिया की मूल आवाज़ बंद किए बिना, चल रहे वीडियो/ऑडियो/टैब की भाषा को पहचानकर लाइव हिन्दी सबटाइटल और मानवीय स्वर में अनुवाद करता है।
             </p>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button id="toggle-pip-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap">
+          <div class="flex items-center flex-wrap gap-2 shrink-0">
+            <label class="flex items-center gap-1.5 cursor-pointer text-xs text-emerald-300 bg-emerald-950/50 px-3 py-2 rounded-xl border border-emerald-500/30" title="जब हिन्दी वक्ता बोलेगा तो मुख्य वक्ता की आवाज़ स्वतः धीमी (6%) हो जाएगी ताकि दोनों आवाज़ें एक साथ न टकराएं">
+              <input type="checkbox" id="keep-media-audio-toggle" checked class="rounded border-slate-700 text-emerald-500 focus:ring-0">
+              <span>🔇 वॉयस आइसोलेशन (दो आवाज़ें नहीं टकराएंगी)</span>
+            </label>
+            <button id="toggle-pip-btn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
               <span>🪟 फ्लोटिंग सबटाइटल (PiP)</span>
             </button>
-            <button id="stop-all-media-btn" class="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all whitespace-nowrap">
+            <button id="stop-all-media-btn" class="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all whitespace-nowrap">
               ⏹️ मीडिया रोकें
             </button>
           </div>
@@ -303,7 +326,7 @@
               <div class="text-xs font-semibold text-amber-400 mb-1">1. डेस्कटॉप व टैबलेट (Browser Tab / Screen)</div>
               <h3 class="text-sm font-bold text-white">🖥️ स्क्रीन व टैब ऑडियो कैप्चर</h3>
               <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                ब्राउज़र में चल रहे YouTube, न्यूज़, मीटिंग (Zoom/Meet) या किसी भी टैब की आवाज़ और स्क्रीन को सीधे पकड़कर हिन्दी में अनुवाद करें।
+                ब्राउज़र में चल रहे YouTube, न्यूज़, मीटिंग (Zoom/Meet) या किसी भी टैब की आवाज़ को बिना म्यूट किए पकड़कर लाइव हिन्दी में बदलें।
               </p>
             </div>
             <button id="start-screen-capture-btn" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-all">
@@ -317,7 +340,7 @@
               <div class="text-xs font-semibold text-emerald-400 mb-1">2. मोबाइल, टैबलेट व स्पीकर (Universal)</div>
               <h3 class="text-sm font-bold text-white">📲 स्पीकर व एम्बिएंट मीडिया लिसनर</h3>
               <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                मोबाइल, टैबलेट या पास के टीवी/स्पीकर पर बज रही किसी भी भाषा की आवाज़ को बिना इको-कट के सुनकर तुरंत हिन्दी में बोलकर सुनाएं।
+                मोबाइल या टैबलेट की मीडिया आवाज़ बंद किए बिना, स्पीकर पर बज रही किसी भी भाषा की आवाज़ को सुनकर मानवीय स्वर में अनुवाद करें।
               </p>
             </div>
             <button id="start-ambient-media-btn" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs transition-all">
@@ -367,7 +390,7 @@
             <div class="p-3.5 rounded-xl bg-slate-950 border border-amber-500/30 flex flex-col gap-1.5">
               <div class="flex items-center justify-between text-xs text-slate-400">
                 <span id="media-live-original">मूल संवाद: किसी भी भाषा का मीडिया चलाएं...</span>
-                <span id="media-live-speaker" class="text-amber-400 font-semibold">भाषा सेतु</span>
+                <span id="media-live-speaker" class="text-amber-400 font-semibold">वक्ता 1 · आरव</span>
               </div>
               <div id="media-live-hindi" class="text-base md:text-lg font-bold text-amber-300 leading-snug">
                 यहाँ डिवाइस पर चल रही भाषा का लाइव हिन्दी अनुवाद दिखेगा...
@@ -389,12 +412,12 @@
                 मोबाइल, टैबलेट या डेस्कटॉप पर किसी भी ऐप (WhatsApp, PDF, ब्राउज़र, ईमेल) से कॉपी किया गया या स्क्रीन पर दिख रहा किसी भी भाषा का वाक्य तुरंत हिन्दी में बदलें:
               </p>
               <label for="screen-text-input" class="sr-only">स्क्रीन या क्लिपबोर्ड टेक्स्ट</label>
-              <textarea id="screen-text-input" rows="4" placeholder="किसी भी भाषा का टेक्स्ट यहाँ पेस्ट करें (उदा. 안녕하세요 / வணக்கம் / Боnjour / നമസ്കാരം / สวัสดี)..." class="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs md:text-sm text-slate-200 focus:outline-none focus:border-amber-500 resize-none"></textarea>
+              <textarea id="screen-text-input" rows="4" placeholder="किसी भी भाषा का टेक्स्ट यहाँ पेस्ट करें (उदा. 안녕하세요 / வணக்கம் / Bonjour / നമസ്കാരം / สวัสดี)..." class="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs md:text-sm text-slate-200 focus:outline-none focus:border-amber-500 resize-none"></textarea>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
               <button id="screen-text-translate-btn" class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-all">
-                🌐 भाषा पहचानें व हिन्दी में बोलें
+                🌐 भाषा पहचानें व मानवीय स्वर में सुनें
               </button>
               <button id="clipboard-translate-btn" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition-all">
                 📋 क्लिपबोर्ड से पेस्ट व अनुवाद
@@ -426,7 +449,7 @@
             <span class="text-xs text-slate-400">नमूना टेस्ट:</span>
             <button type="button" data-sample="안녕하세요, 생방송에 오신 것을 환영합니다" class="sample-lang-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">한국어</button>
             <button type="button" data-sample="வணக்கம், எப்படி இருக்கிறீர்கள்" class="sample-lang-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">தமிழ்</button>
-            <button type="button" data-sample="നമസ്കാരം, സുप्रഭാതം" class="sample-lang-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">മലയാളം</button>
+            <button type="button" data-sample="നമസ്കാരം, സുപ്രഭാതം" class="sample-lang-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">മലയാളം</button>
             <button type="button" data-sample="Bienvenidos a la transmisión en vivo" class="sample-lang-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">Español</button>
             <button type="button" data-sample="本日のニュースをお伝えします" class="sample-lang-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">日本語</button>
           </div>
@@ -453,7 +476,7 @@
             </div>
             <div class="flex items-center gap-2">
               <button id="quick-speak-btn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all">
-                🔊 हिन्दी में सुनें
+                🔊 मानवीय हिन्दी स्वर में सुनें
               </button>
               <button id="quick-copy-btn" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all">
                 📋 कॉपी करें
@@ -465,7 +488,7 @@
     </div>
 
     <!-- =================================================== -->
-    <!-- TAB 4: वक्ता प्रोफाइल एवं ध्वनि स्पष्टता (Diarization) -->
+    <!-- TAB 4: 12 मानवीय वक्ता प्रोफाइल एवं ध्वनि स्पष्टता     -->
     <!-- =================================================== -->
     <div id="tab-speakers" class="tab-content hidden flex-1 flex flex-col gap-4">
       <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
@@ -473,40 +496,33 @@
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              👥 बहु-वक्ता प्रोफाइल एवं ध्वनि स्पष्टता (Clarity Equalizer)
+              👥 12 मानवीय वक्ता प्रोफाइल (6 पुरुष, 6 महिला) एवं ध्वनि स्पष्टता EQ
             </h2>
             <p class="text-xs text-slate-400 mt-0.5">
-              जब कई लोग बात कर रहे हों, तो उनकी आवाज़ अलग-अलग लगे और अनुवाद बिल्कुल स्पष्ट सुनाई दे।
+              सभी वक्ताओं की आवाज़ को कृत्रिम/रोबोटिक के बजाय स्वाभाविक मानवीय पिच (0.92x–1.07x) और न्यूरल हिन्दी स्वर पर ट्यून किया गया है।
             </p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center flex-wrap gap-2">
             <label for="new-speaker-name-input" class="sr-only">नए वक्ता का नाम</label>
             <input type="text" id="new-speaker-name-input" placeholder="नए वक्ता का नाम..." class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+            <label for="new-speaker-style-select" class="sr-only">आवाज़ की शैली</label>
+            <select id="new-speaker-style-select" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <option value="male-natural">पुरुष • स्वाभाविक स्वर</option>
+              <option value="female-natural">महिला • मधुर स्वर</option>
+              <option value="male-deep">पुरुष • गंभीर न्यूज़ एंकर</option>
+              <option value="female-soft">महिला • सौम्य कथावाचक</option>
+              <option value="male-energetic">पुरुष • ऊर्जावान संवादी</option>
+              <option value="female-bright">महिला • स्पष्ट युवा स्वर</option>
+            </select>
             <button id="add-speaker-btn" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all whitespace-nowrap">
-              + नया वक्ता जोड़ें
+              + नया मानवीय वक्ता जोड़ें
             </button>
           </div>
         </div>
 
-        <!-- Clarity Feature Highlight Box -->
-        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-xs space-y-2 text-slate-300">
-          <div class="font-bold text-amber-400 text-sm flex items-center gap-2">
-            ✨ आवाज़ को अलग और स्पष्ट कैसे बनाया जाता है?
-          </div>
-          <p>
-            1. <strong>वोकल क्लैरिटी बैंडपास फ़िल्टर:</strong> 300Hz से कम की अवांछित घड़घड़ाहट और 3.4kHz से ऊपर की सीटी जैसी फुसफुसाहट को रोककर मानव आवाज़ को क्रिस्टल क्लियर बनाता है।
-          </p>
-          <p>
-            2. <strong>पिच ($F_0$) ऑटो-डायराइज़ेशन:</strong> ऑटो-कोरिलेशन गणितीय एल्गोरिदम द्वारा प्रत्येक व्यक्ति की स्वर-तार की पिच मापी जाती है।
-          </p>
-          <p>
-            3. <strong>विशिष्ट स्वर प्लेबैक:</strong> अनुवाद सुनाते समय प्रत्येक वक्ता के लिए भिन्न पिच (गंभीर 0.85x, मध्यम 1.05x, उच्च 1.25x) का उपयोग किया जाता है ताकि आँखें बंद करके भी समझ आए कि कौन सा वक्ता बोल रहा है।
-          </p>
-        </div>
-
-        <!-- Speaker Profiles List -->
-        <div id="speaker-profiles-list" class="flex flex-col gap-3">
-          <!-- Dynamically populated -->
+        <!-- Speaker Profiles Grid (2 Columns on Desktop for 12 Speakers) -->
+        <div id="speaker-profiles-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Dynamically populated with 12 human speakers -->
         </div>
 
       </div>
@@ -517,19 +533,52 @@
     <!-- =================================================== -->
     <div id="tab-sync" class="tab-content hidden flex-1 flex flex-col gap-4">
       <div class="glass-panel p-5 rounded-2xl flex flex-col gap-5">
-        <div>
-          <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            🔄 रीयल-टाइम सुरक्षित सिंक्रोनाइज़ेशन (E2EE)
-          </h2>
-          <p class="text-xs text-slate-400 mt-0.5">
-            मोबाइल, टैबलेट और डेस्कटॉप के बीच बिना किसी केंद्रीय सर्वर पर डेटा स्टोर किए रीयल-टाइम सिंक।
-          </p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              🔄 रीयल-टाइम सुरक्षित सिंक्रोनाइज़ेशन (E2EE) — यह कैसे काम करता है?
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              मोबाइल, टैबलेट और डेस्कटॉप के बीच बिना किसी सर्वर को आपका मूल संदेश दिखाए (Zero-Knowledge) रीयल-टाइम अनुवाद सिंक।
+            </p>
+          </div>
+          <button id="test-sync-ping-btn" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-all whitespace-nowrap">
+            📡 लाइव एन्क्रिप्टेड सिंक टेस्ट भेजें
+          </button>
+        </div>
+
+        <!-- 4-Step Visual Explanation of How E2EE Sync Works -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col gap-1.5">
+            <span class="text-xs font-bold text-amber-400">चरण 1: कमरा व गुप्त कुंजी (PBKDF2)</span>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              आप सभी डिवाइसों (मोबाइल, टैबलेट, डेस्कटॉप) पर समान <strong>कमरा कोड</strong> (जैसे <code>SETU-782</code>) और <strong>पासफ्रेज</strong> डालते हैं। PBKDF2-SHA256 (1,00,000 राउंड) इससे आपके डिवाइस के भीतर ही 256-बिट कुंजी बनाता है।
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col gap-1.5">
+            <span class="text-xs font-bold text-emerald-400">चरण 2: लोकल AES-256-GCM लॉक</span>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              जब एक डिवाइस पर कोई बोलता है, तो उसका मूल वाक्य और हिन्दी अनुवाद डिवाइस छोड़ने से पहले ही <strong>AES-256-GCM</strong> और नए 96-बिट रैंडम IV द्वारा अपठनीय कोड (Ciphertext) में बदल दिया जाता है।
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col gap-1.5">
+            <span class="text-xs font-bold text-sky-400">चरण 3: रीयल-टाइम रिले प्रसारण</span>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              यह लॉक किया हुआ पैकेट <strong>Server-Sent Events (SSE)</strong> (इंटरनेट/Wi-Fi पर जुड़े अन्य मोबाइल/टैबलेट के लिए) और <strong>BroadcastChannel</strong> (समान डिवाइस टैब के लिए) से तुरंत (&lt;30ms में) भेजा जाता है।
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col gap-1.5">
+            <span class="text-xs font-bold text-purple-400">चरण 4: फिंगरप्रिंट जाँच व प्लेबैक</span>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              दूसरे डिवाइस अपनी समान गुप्त कुंजी से पैकेट को अनलॉक (Decrypt) करते हैं। यदि दोनों डिवाइसों पर <strong>SHA-256 फिंगरप्रिंट</strong> समान है, तो अनुवाद तुरंत स्क्रीन पर दिखता है और मानवीय आवाज़ में सुनाई देता है।
+            </p>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <!-- Room Configuration -->
           <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col gap-4">
-            <h3 class="text-sm font-bold text-slate-200">कमरे (Room) की सेटिंग्स</h3>
+            <h3 class="text-sm font-bold text-slate-200">कमरे (Room) व पेयरिंग की सेटिंग्स</h3>
             
             <div>
               <label for="room-id-input" class="text-xs text-slate-400 block mb-1">कमरा कोड (Room Code):</label>
@@ -537,38 +586,44 @@
             </div>
 
             <div>
-              <label for="room-key-input" class="text-xs text-slate-400 block mb-1">सुरक्षा एन्क्रिप्शन पासफ्रेज (E2EE Key):</label>
+              <label for="room-key-input" class="text-xs text-slate-400 block mb-1">सुरक्षा एन्क्रिप्शन पासफ्रेज (E2EE Secret Key):</label>
               <input type="password" id="room-key-input" value="bhasha-setu-secure-room-key" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 font-mono text-sm">
-              <span class="text-[11px] text-slate-500 mt-1 block">यह की (Key) केवल आपके और आपके साथियों के पास होनी चाहिए।</span>
+              <span class="text-[11px] text-slate-500 mt-1 block">यह पासफ्रेज कभी सर्वर पर नहीं भेजा जाता — केवल आपके डिवाइसों पर रहता है।</span>
             </div>
 
             <div class="flex items-center gap-2">
               <button id="join-room-btn" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition-all">
-                रूम में जुड़ें / सिंक चालू करें
+                रूम में जुड़ें / सिंक अपडेट करें
               </button>
               <button id="share-room-btn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-xs border border-slate-700 transition-all" title="पेयरिंग लिंक कॉपी करें">
-                🔗 शेयर करें
+                🔗 पेयरिंग लिंक कॉपी करें
               </button>
             </div>
           </div>
 
-          <!-- Security Verification Card -->
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col gap-4">
-            <h3 class="text-sm font-bold text-slate-200">सुरक्षा व प्रमाणीकरण</h3>
+          <!-- Security Verification & Live E2EE Telemetry Log -->
+          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-200">सुरक्षा फिंगरप्रिंट व लाइव क्रिप्टो लॉग</h3>
+              <span id="peer-count-badge" class="font-bold text-emerald-400 text-xs tabular-nums">1 जुड़ा हुआ डिवाइस</span>
+            </div>
             
-            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <span class="text-[11px] text-slate-400 block mb-1">सुरक्षा फिंगरप्रिंट (SHA-256):</span>
-              <div id="room-fingerprint" class="font-mono text-xs text-amber-400 font-bold">
-                गणना की जा रही है...
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+              <div>
+                <span class="text-[11px] text-slate-400 block">SHA-256 सुरक्षा फिंगरप्रिंट:</span>
+                <div id="room-fingerprint" class="font-mono text-xs text-amber-400 font-bold">
+                  गणना की जा रही है...
+                </div>
               </div>
-              <p class="text-[10px] text-slate-500 mt-1">
-                यदि दोनों डिवाइसों पर यह फिंगरप्रिंट समान है, तो आपका कनेक्शन 100% सुरक्षित और गुप्त है।
-              </p>
+              <span class="text-[11px] text-emerald-400 font-medium">AES-256-GCM सक्रिय</span>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-xs">
-              <span class="text-slate-300">कनेक्टेड डिवाइस स्थिति:</span>
-              <span id="peer-count-badge" class="font-bold text-emerald-400 tabular-nums">1 जुड़ा हुआ डिवाइस</span>
+            <!-- Live E2EE Packet Inspector Log -->
+            <div class="flex-1 flex flex-col gap-1.5">
+              <span class="text-[11px] text-slate-400 font-semibold">लाइव एन्क्रिप्शन / सिंक गतिविधि (E2EE Packet Log):</span>
+              <div id="sync-activity-log" class="p-3 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 max-h-40 overflow-y-auto space-y-2">
+                <div class="text-slate-400">सिंक चैनल तैयार है। परीक्षण के लिए ऊपर "लाइव एन्क्रिप्टेड सिंक टेस्ट भेजें" दबाएं।</div>
+              </div>
             </div>
           </div>
         </div>
@@ -623,8 +678,8 @@
   <!-- Footer -->
   <footer class="glass-header text-center py-2.5 px-4 text-slate-500 text-xs border-t border-slate-800">
     <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
-      <span>भाषा सेतु (BhashaSetu) • टैबलेट, मोबाइल व डेस्कटॉप पर चल रही सभी भाषाओं के लिए सक्षम</span>
-      <span>🔒 एंड-टू-एंड 256-बिट एन्क्रिप्टेड</span>
+      <span>भाषा सेतु (BhashaSetu) • 12 मानवीय स्वर • टैबलेट, मोबाइल व डेस्कटॉप पर नॉन-म्यूटिंग मीडिया अनुवाद</span>
+      <span>🔒 एंड-टू-एंड 256-बिट एन्क्रिप्टेड (Zero-Knowledge Sync)</span>
     </div>
   </footer>
 

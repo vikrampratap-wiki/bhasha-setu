@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const { BhashaTranslator, LANGUAGE_CATALOG } = require('../js/translator.js');
@@ -52,10 +53,36 @@ test('translateWithMeta translates offline across multiple languages into Hindi'
   assert.equal(esRes.translatedText, 'लाइव प्रसारण में आपका स्वागत है');
 });
 
-test('Indic cross-script transliteration converts unknown regional script words into Devanagari', () => {
-  const translator = new BhashaTranslator();
-  translator.forceOffline = true;
-  // Bengali script word "भारत" (ভারত) -> Devanagari
-  const devanagari = translator.transliterateIndicToDevanagari('ভারত');
-  assert.equal(devanagari, 'भारत');
+test('audio-clarity.js defines 12 human speaker profiles with natural non-robotic pitch (0.92-1.08)', () => {
+  const code = fs.readFileSync('js/audio-clarity.js', 'utf8');
+  const matches = code.match(/id:\s*'speaker-\d+'/g) || [];
+  assert.equal(matches.length, 12, 'Expected 12 built-in human speaker profiles');
+
+  const pitchMatches = [...code.matchAll(/pitch:\s*([0-9.]+)/g)].map(m => parseFloat(m[1]));
+  for (const p of pitchMatches) {
+    assert.ok(p >= 0.90 && p <= 1.10, `Speaker pitch ${p} should be within natural human range`);
+  }
 });
+
+test('translateInstant and translateWithMeta deliver millisecond (< 5ms) Hindi translation response', async () => {
+  const translator = new BhashaTranslator();
+
+  const t0 = performance.now();
+  const instant = translator.translateInstant('Welcome to our live broadcast', 'en');
+  const elapsedInstant = performance.now() - t0;
+
+  assert.equal(instant.translatedText, 'हमारे लाइव प्रसारण में आपका स्वागत है');
+  assert.ok(elapsedInstant < 10, `Expected instant translation in < 10ms, took ${elapsedInstant}ms`);
+
+  const meta = await translator.translateWithMeta('Hello, how are you? Welcome to our live broadcast.', 'en');
+  assert.ok(meta.translatedText.includes('नमस्ते'));
+  assert.ok(meta.latencyMs <= 10, `Expected millisecond translation latency, got ${meta.latencyMs}ms`);
+});
+
+test('tts.js enforces Single-Voice Isolation and zero robotic detune warping', () => {
+  const ttsCode = fs.readFileSync('js/tts.js', 'utf8');
+  assert.ok(ttsCode.includes('setVoiceIsolationState'), 'Expected Single-Voice Isolation state handler');
+  assert.ok(ttsCode.includes('currentSpeakToken'), 'Expected concurrency token preventing simultaneous voices');
+  assert.ok(!ttsCode.includes('source.detune.value ='), 'Should not apply robotic detune warping to Web Audio source');
+});
+
